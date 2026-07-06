@@ -138,5 +138,3 @@ resume-to-website/
 ## 许可证
 
 [MIT](LICENSE)
-# resume-to-website
-Customize your personalized website by uploading your resume.
