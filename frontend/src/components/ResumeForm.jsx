@@ -17,6 +17,13 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
   const [hobbyCnInput, setHobbyCnInput] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // AI Effects state
+  const [aiEffects, setAiEffects] = useState([])
+  const [aiDesc, setAiDesc] = useState('')
+  const [aiApiKey, setAiApiKey] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [showApiKeyGuide, setShowApiKeyGuide] = useState(false)
+
   const updateField = (field, value) => setResume(prev => ({ ...prev, [field]: value }))
 
   const updateWork = (index, field, value) => {
@@ -45,22 +52,45 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
   const removeHobby = (index) => setResume(prev => ({ ...prev, hobbies: prev.hobbies.filter((_, i) => i !== index) }))
   const removeHobbyCn = (index) => setResume(prev => ({ ...prev, hobbies_cn: prev.hobbies_cn.filter((_, i) => i !== index) }))
 
+  const generateAIEffect = async () => {
+    if (!aiDesc.trim()) return
+    setAiGenerating(true)
+    try {
+      const resp = await fetch('/api/ai-effects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: aiDesc, api_key: aiApiKey }),
+      })
+      const data = await resp.json()
+      if (resp.ok) {
+        setAiEffects(prev => [...prev, { ...data, id: Date.now() }])
+        setAiDesc('')
+      } else {
+        alert(data.detail || 'AI generation failed')
+      }
+    } catch (err) {
+      alert('Failed to connect to AI service')
+    } finally {
+      setAiGenerating(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    try { await onSubmit(resume) }
+    try { await onSubmit(resume, aiEffects) }
     finally { setLoading(false) }
   }
 
   const isPersonal = mode === 'personal'
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-10">
+    <form onSubmit={handleSubmit} className="space-y-12">
       {/* Bilingual Toggle */}
-      <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+      <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl px-6 py-5">
         <div>
           <p className="text-sm font-semibold text-amber-800">{t.bilingualTitle}</p>
-          <p className="text-xs text-amber-600 mt-0.5">{t.bilingualDesc}</p>
+          <p className="text-xs text-amber-600 mt-1">{t.bilingualDesc}</p>
         </div>
         <button type="button" onClick={() => setShowBilingual(!showBilingual)}
           className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ml-4 ${showBilingual ? 'bg-amber-500' : 'bg-gray-300'}`}>
@@ -70,45 +100,48 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
 
       {/* Basic Info */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-5 pb-2 border-b border-gray-200">{t.basicInfo}</h2>
+        <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          {t.basicInfo}
+        </h2>
         <div className="grid md:grid-cols-2 gap-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.name} {t.required}</label>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.name} {t.required}</label>
             <input type="text" required value={resume.name} onChange={e => updateField('name', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder={t.namePh} />
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white" placeholder={t.namePh} />
           </div>
           {showBilingual && (
           <div>
-            <label className="block text-sm font-medium text-amber-700 mb-1.5">{t.nameCn}</label>
+            <label className="block text-[11px] font-semibold text-amber-600 uppercase tracking-wider mb-2">{t.nameCn}</label>
             <input type="text" value={resume.name_cn} onChange={e => updateField('name_cn', e.target.value)}
-              className="w-full px-4 py-2.5 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-amber-50" placeholder={t.nameCnPh} />
+              className="w-full px-4 py-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-amber-50/50 focus:bg-white transition-all" placeholder={t.nameCnPh} />
           </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.titlePosition} {t.required}</label>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.titlePosition} {t.required}</label>
             <input type="text" required value={resume.title} onChange={e => updateField('title', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder={t.titlePh} />
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white" placeholder={t.titlePh} />
           </div>
           {showBilingual && (
           <div>
-            <label className="block text-sm font-medium text-amber-700 mb-1.5">{t.titleCn}</label>
+            <label className="block text-[11px] font-semibold text-amber-600 uppercase tracking-wider mb-2">{t.titleCn}</label>
             <input type="text" value={resume.title_cn} onChange={e => updateField('title_cn', e.target.value)}
-              className="w-full px-4 py-2.5 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-amber-50" placeholder={t.titleCnPh} />
+              className="w-full px-4 py-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-amber-50/50 focus:bg-white transition-all" placeholder={t.titleCnPh} />
           </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.email}</label>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.email}</label>
             <input type="email" value={resume.email} onChange={e => updateField('email', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder={t.emailPh} />
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white" placeholder={t.emailPh} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.phone}</label>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.phone}</label>
             <input type="text" value={resume.phone} onChange={e => updateField('phone', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" placeholder={t.phonePh} />
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white" placeholder={t.phonePh} />
           </div>
         </div>
         <div className="mt-5">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.avatarUrl}</label>
+          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.avatarUrl}</label>
           <div className="flex items-center gap-4">
             {resume.avatar_url && (
               <img src={resume.avatar_url} alt="avatar" className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
@@ -128,7 +161,7 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
               <span className="text-xs text-gray-400 mx-2">{t.orEnterUrl}</span>
               <input type="url" value={resume.avatar_url?.startsWith('data:') ? '' : resume.avatar_url}
                 onChange={e => updateField('avatar_url', e.target.value)}
-                className="inline-block w-48 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://..." />
+                className="inline-block w-48 px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="https://..." />
               {resume.avatar_url && (
                 <button type="button" onClick={() => updateField('avatar_url', '')} className="ml-2 text-red-400 hover:text-red-600 text-xs">{t.clearImage}</button>
               )}
@@ -136,15 +169,15 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
           </div>
         </div>
         <div className="mt-5">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.aboutMe}</label>
+          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.aboutMe}</label>
           <textarea value={resume.bio} rows={3} onChange={e => updateField('bio', e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none" placeholder={t.bioPh} />
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white resize-none" placeholder={t.bioPh} />
         </div>
         {showBilingual && (
         <div className="mt-4">
-          <label className="block text-sm font-medium text-amber-700 mb-1.5">{t.bioCn}</label>
+          <label className="block text-[11px] font-semibold text-amber-600 uppercase tracking-wider mb-2">{t.bioCn}</label>
           <textarea value={resume.bio_cn} rows={3} onChange={e => updateField('bio_cn', e.target.value)}
-            className="w-full px-4 py-2.5 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none bg-amber-50" placeholder={t.bioCnPh} />
+            className="w-full px-4 py-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-amber-50/50 focus:bg-white resize-none transition-all" placeholder={t.bioCnPh} />
         </div>
         )}
       </section>
@@ -153,9 +186,12 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
 
       {/* Work Experience */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-5 pb-2 border-b border-gray-200">{t.workExperience}</h2>
+        <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          {t.workExperience}
+        </h2>
         {resume.work_experiences.map((exp, i) => (
-          <div key={i} className="bg-gray-50 rounded-xl p-5 mb-5 border border-gray-100">
+          <div key={i} className="bg-gray-50/80 rounded-2xl p-6 mb-5 border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-semibold text-gray-500">#{i + 1}</span>
               {resume.work_experiences.length > 1 && (
@@ -164,20 +200,20 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">{t.company}</label>
-                <input type="text" placeholder={t.company} value={exp.company} onChange={e => updateWork(i, 'company', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.company}</label>
+                <input type="text" placeholder={t.company} value={exp.company} onChange={e => updateWork(i, 'company', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">{t.position}</label>
-                <input type="text" placeholder={t.position} value={exp.position} onChange={e => updateWork(i, 'position', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.position}</label>
+                <input type="text" placeholder={t.position} value={exp.position} onChange={e => updateWork(i, 'position', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">{t.duration}</label>
-                <input type="text" placeholder={t.durationPh} value={exp.duration} onChange={e => updateWork(i, 'duration', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.duration}</label>
+                <input type="text" placeholder={t.durationPh} value={exp.duration} onChange={e => updateWork(i, 'duration', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">{t.description}</label>
-                <textarea placeholder={t.descPh} value={exp.description} rows={2} onChange={e => updateWork(i, 'description', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.description}</label>
+                <textarea placeholder={t.descPh} value={exp.description} rows={2} onChange={e => updateWork(i, 'description', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white resize-none" />
               </div>
             </div>
             {showBilingual && (
@@ -185,20 +221,20 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
               <p className="text-xs font-semibold text-amber-600 mb-3">{lang === 'zh' ? '中文翻译' : 'Chinese Translation'}</p>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-amber-500 mb-1">{t.companyCn}</label>
-                  <input type="text" placeholder={t.companyCn} value={exp.company_cn} onChange={e => updateWork(i, 'company_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50" />
+                  <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.companyCn}</label>
+                  <input type="text" placeholder={t.companyCn} value={exp.company_cn} onChange={e => updateWork(i, 'company_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/50 transition-all" />
                 </div>
                 <div>
-                  <label className="block text-xs text-amber-500 mb-1">{t.positionCn}</label>
-                  <input type="text" placeholder={t.positionCn} value={exp.position_cn} onChange={e => updateWork(i, 'position_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50" />
+                  <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.positionCn}</label>
+                  <input type="text" placeholder={t.positionCn} value={exp.position_cn} onChange={e => updateWork(i, 'position_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/50 transition-all" />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs text-amber-500 mb-1">{t.durationCn}</label>
-                  <input type="text" placeholder={t.durationCn} value={exp.duration_cn} onChange={e => updateWork(i, 'duration_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50" />
+                  <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.durationCn}</label>
+                  <input type="text" placeholder={t.durationCn} value={exp.duration_cn} onChange={e => updateWork(i, 'duration_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/50 transition-all" />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs text-amber-500 mb-1">{t.descCn}</label>
-                  <textarea placeholder={t.descCn} value={exp.description_cn} rows={2} onChange={e => updateWork(i, 'description_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 resize-none bg-amber-50" />
+                  <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.descCn}</label>
+                  <textarea placeholder={t.descCn} value={exp.description_cn} rows={2} onChange={e => updateWork(i, 'description_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 resize-none bg-amber-50/50 transition-all" />
                 </div>
               </div>
             </div>
@@ -210,9 +246,12 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
 
       {/* Education */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-5 pb-2 border-b border-gray-200">{t.education}</h2>
+        <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          {t.education}
+        </h2>
         {resume.educations.map((edu, i) => (
-          <div key={i} className="bg-gray-50 rounded-xl p-5 mb-5 border border-gray-100">
+          <div key={i} className="bg-gray-50/80 rounded-2xl p-6 mb-5 border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-semibold text-gray-500">#{i + 1}</span>
               {resume.educations.length > 1 && (
@@ -221,16 +260,16 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
             </div>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">{t.school}</label>
-                <input type="text" placeholder={t.school} value={edu.school} onChange={e => updateEdu(i, 'school', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.school}</label>
+                <input type="text" placeholder={t.school} value={edu.school} onChange={e => updateEdu(i, 'school', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">{t.major}</label>
-                <input type="text" placeholder={t.major} value={edu.major} onChange={e => updateEdu(i, 'major', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.major}</label>
+                <input type="text" placeholder={t.major} value={edu.major} onChange={e => updateEdu(i, 'major', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">{t.duration}</label>
-                <input type="text" placeholder={t.eduDurationPh} value={edu.duration} onChange={e => updateEdu(i, 'duration', e.target.value)} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.duration}</label>
+                <input type="text" placeholder={t.eduDurationPh} value={edu.duration} onChange={e => updateEdu(i, 'duration', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
               </div>
             </div>
             {showBilingual && (
@@ -238,16 +277,16 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
               <p className="text-xs font-semibold text-amber-600 mb-3">{lang === 'zh' ? '中文翻译' : 'Chinese Translation'}</p>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs text-amber-500 mb-1">{t.schoolCn}</label>
-                  <input type="text" placeholder={t.schoolCn} value={edu.school_cn} onChange={e => updateEdu(i, 'school_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50" />
+                  <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.schoolCn}</label>
+                  <input type="text" placeholder={t.schoolCn} value={edu.school_cn} onChange={e => updateEdu(i, 'school_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/50 transition-all" />
                 </div>
                 <div>
-                  <label className="block text-xs text-amber-500 mb-1">{t.majorCn}</label>
-                  <input type="text" placeholder={t.majorCn} value={edu.major_cn} onChange={e => updateEdu(i, 'major_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50" />
+                  <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.majorCn}</label>
+                  <input type="text" placeholder={t.majorCn} value={edu.major_cn} onChange={e => updateEdu(i, 'major_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/50 transition-all" />
                 </div>
                 <div>
-                  <label className="block text-xs text-amber-500 mb-1">{t.eduDurationCn}</label>
-                  <input type="text" placeholder={t.eduDurationCn} value={edu.duration_cn} onChange={e => updateEdu(i, 'duration_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50" />
+                  <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.eduDurationCn}</label>
+                  <input type="text" placeholder={t.eduDurationCn} value={edu.duration_cn} onChange={e => updateEdu(i, 'duration_cn', e.target.value)} className="w-full px-3 py-2.5 border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/50 transition-all" />
                 </div>
               </div>
             </div>
@@ -259,7 +298,10 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
 
       {/* Skills */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-5 pb-2 border-b border-gray-200">{t.skills}</h2>
+        <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          {t.skills}
+        </h2>
         <div className="flex flex-wrap gap-2 mb-3 min-h-[8px]">
           {resume.skills.map((skill, i) => (
             <span key={i} className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm ${isPersonal ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
@@ -295,7 +337,10 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
 
       {/* Hobbies */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-5 pb-2 border-b border-gray-200">{t.hobbies}</h2>
+        <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          {t.hobbies}
+        </h2>
         <div className="flex flex-wrap gap-2 mb-3 min-h-[8px]">
           {resume.hobbies.map((hobby, i) => (
             <span key={i} className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm ${isPersonal ? 'bg-pink-100 text-pink-700' : 'bg-gray-100 text-gray-700'}`}>
@@ -329,10 +374,95 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
         )}
       </section>
 
+      {/* AI Custom Effects - Optional */}
+      <section>
+        <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-purple-500 to-pink-500 inline-block" />
+          {'\u2728'} {t.aiEffects} <span className="text-sm font-normal text-gray-400">{t.aiOptional}</span>
+        </h2>
+        <p className="text-xs text-gray-500 mb-4">{t.aiEffectsDesc}</p>
+
+        {/* API Key section */}
+        <div className="mb-5">
+          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Gemini API Key
+          </label>
+          <input type="password" value={aiApiKey} onChange={e => setAiApiKey(e.target.value)}
+            placeholder={t.apiKeyPh}
+            className={`w-full px-4 py-2.5 border rounded-lg text-sm outline-none focus:ring-2 ${
+              aiApiKey
+                ? 'border-green-400 focus:ring-green-300 bg-green-50'
+                : 'border-purple-300 focus:ring-purple-300'
+            }`} />
+          {aiApiKey ? (
+            <p className="text-xs text-green-600 mt-1">{'\u2713'} API Key set</p>
+          ) : (
+            <p className="text-xs text-gray-400 mt-1">{t.apiKeyRequired}</p>
+          )}
+
+          {/* Toggle guide */}
+          <button type="button" onClick={() => setShowApiKeyGuide(!showApiKeyGuide)}
+            className="mt-2 text-xs font-medium text-purple-600 hover:text-purple-800 underline">
+            {showApiKeyGuide ? '\u25B2' : '\u25BC'} {t.apiKeyGuideTitle}
+          </button>
+
+          {/* Guide panel */}
+          {showApiKeyGuide && (
+            <div className="mt-2 p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
+              <p className="text-sm font-semibold text-purple-800">{t.apiKeyGuideTitle}</p>
+              <ol className="text-sm text-purple-700 space-y-1.5">
+                <li>{t.apiKeyStep1}
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
+                    className="font-semibold text-purple-800 underline hover:text-purple-900">{t.apiKeyStep1Link}</a>
+                </li>
+                <li>{t.apiKeyStep2}</li>
+                <li>{t.apiKeyStep3}</li>
+                <li>{t.apiKeyStep4}</li>
+              </ol>
+              <p className="text-xs text-purple-500 mt-2 pt-2 border-t border-purple-200">{'\u2139\uFE0F'} {t.apiKeyFreeNote}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Effects list */}
+        {aiEffects.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {aiEffects.map((effect, i) => (
+              <div key={effect.id || i} className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
+                <span className="text-sm text-purple-700">{'\u2728'} {effect.description}</span>
+                <button type="button" onClick={() => setAiEffects(prev => prev.filter((_, idx) => idx !== i))}
+                  className="text-red-400 hover:text-red-600 text-xs ml-2">{t.removeEffect}</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Generate effect input */}
+        <div className="flex gap-2">
+          <input type="text" value={aiDesc} onChange={e => setAiDesc(e.target.value)}
+            placeholder={t.aiEffectsPh}
+            disabled={!aiApiKey}
+            className={`flex-1 px-4 py-2.5 border rounded-lg outline-none focus:ring-2 ${
+              aiApiKey
+                ? 'border-purple-300 focus:ring-purple-500'
+                : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+            }`} />
+          <button type="button" onClick={generateAIEffect}
+            disabled={aiGenerating || !aiDesc.trim() || !aiApiKey}
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium text-white flex-shrink-0 ${
+              aiGenerating || !aiDesc.trim() || !aiApiKey
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-purple-600 hover:bg-purple-700'
+            }`}>
+            {aiGenerating ? t.generatingEffect : t.generateEffect}
+          </button>
+        </div>
+      </section>
+
       {/* Submit */}
-      <div className="pt-6">
+      <div className="pt-8">
         <button type="submit" disabled={loading}
-          className={`w-full py-4 rounded-xl text-white font-bold text-lg transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : isPersonal ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700' : 'bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black'}`}>
+          className={`w-full py-4 rounded-2xl text-white font-bold text-lg transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : isPersonal ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:shadow-lg active:scale-[0.99]' : 'bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black hover:shadow-lg active:scale-[0.99]'}`}>
           {loading ? t.generating : isPersonal ? t.generatePersonal : t.generateProfessional}
         </button>
       </div>

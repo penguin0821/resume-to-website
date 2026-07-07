@@ -7,47 +7,198 @@ function Home() {
   const { t } = useLang()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
+    <div className="min-h-screen bg-[#0a0118] relative overflow-hidden">
+      {/* Gradient background layers */}
+      <div className="absolute inset-0">
+        {/* Main gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0533] via-[#0f0a2e] to-[#0a0118]" />
+        {/* Purple glow */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px]" />
+        {/* Blue glow */}
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-[100px]" />
+        {/* Orange accent */}
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-orange-500/10 rounded-full blur-[80px]" />
+        {/* Light beams */}
+        <div className="absolute top-0 left-1/3 w-px h-full bg-gradient-to-b from-purple-500/20 via-transparent to-transparent" />
+        <div className="absolute top-0 left-2/3 w-px h-full bg-gradient-to-b from-blue-500/15 via-transparent to-transparent" />
+        <div className="absolute top-0 left-1/2 w-px h-full bg-gradient-to-b from-purple-400/10 via-transparent to-transparent" />
+      </div>
+
       <Navbar />
-      <main className="max-w-5xl mx-auto px-6 py-20">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">{t.heroTitle}</h1>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">{t.heroSubtitle}</p>
+
+      <main className="relative z-10">
+        {/* Hero Section */}
+        <div className="max-w-6xl mx-auto px-6 pt-16 pb-12">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            {/* Left: Text content */}
+            <div className="flex-1 text-center lg:text-left">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm mb-8">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-sm text-gray-300">AI-Powered Website Builder</span>
+              </div>
+
+              <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight mb-6">
+                <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                  {t.heroTitle.split(' ').slice(0, 2).join(' ')}
+                </span>
+                <br />
+                <span className="text-white">
+                  {t.heroTitle.split(' ').slice(2).join(' ')}
+                </span>
+              </h1>
+
+              <p className="text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed">
+                {t.heroSubtitle}
+              </p>
+
+              {/* Stats */}
+              <div className="flex items-center justify-center lg:justify-start gap-8 mb-10">
+                <div>
+                  <div className="text-2xl font-bold text-white">4</div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wider">UI Styles</div>
+                </div>
+                <div className="w-px h-10 bg-white/10" />
+                <div>
+                  <div className="text-2xl font-bold text-white">AI</div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wider">Effects</div>
+                </div>
+                <div className="w-px h-10 bg-white/10" />
+                <div>
+                  <div className="text-2xl font-bold text-white">EN/CN</div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wider">Bilingual</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Penguin mascot */}
+            <div className="flex-shrink-0 relative">
+              {/* Glow behind penguin */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 to-blue-500/20 rounded-full blur-[60px] scale-110" />
+              {/* Penguin image */}
+              <img
+                src="/images/penguin-logo.png"
+                alt="Penguin Mascot"
+                className="relative w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-[0_0_40px_rgba(139,92,246,0.3)] animate-[float_6s_ease-in-out_infinite]"
+              />
+              {/* Floating badges around penguin */}
+              <div className="absolute top-4 -right-2 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-xs text-white font-medium animate-[float_4s_ease-in-out_infinite_0.5s]">
+                React + Vite
+              </div>
+              <div className="absolute bottom-12 -left-4 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-xs text-white font-medium animate-[float_5s_ease-in-out_infinite_1s]">
+                Gemini AI
+              </div>
+              <div className="absolute top-1/2 -right-6 px-3 py-1.5 bg-purple-500/20 backdrop-blur-md rounded-full border border-purple-400/30 text-xs text-purple-300 font-medium animate-[float_4.5s_ease-in-out_infinite_0.3s]">
+                {'\u2728'} Tailwind
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <button
-            onClick={() => navigate('/form/personal')}
-            className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-indigo-400 text-left cursor-pointer"
-          >
-            <div className="text-5xl mb-4">{'\u{1F3A8}'}</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">{t.personalTitle}</h2>
-            <p className="text-gray-500 mb-4">{t.personalDesc}</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium">{t.customColors}</span>
-              <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs font-medium">{t.artistic}</span>
-              <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-medium">{t.cartoon}</span>
-              <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs font-medium">{t.retro}</span>
-            </div>
-            <div className="mt-6 text-indigo-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">{t.getStarted}</div>
-          </button>
+        {/* Mode Cards Section */}
+        <div className="max-w-5xl mx-auto px-6 pb-20">
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Personal & Creative Card */}
+            <button
+              onClick={() => navigate('/form/personal')}
+              className="group relative text-left cursor-pointer"
+            >
+              {/* Card glow on hover */}
+              <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-purple-500/50 via-pink-500/30 to-orange-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
 
-          <button
-            onClick={() => navigate('/form/professional')}
-            className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-gray-800 text-left cursor-pointer"
-          >
-            <div className="text-5xl mb-4">{'\u{1F4BC}'}</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-gray-700 transition-colors">{t.professionalTitle}</h2>
-            <p className="text-gray-500 mb-4">{t.professionalDesc}</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">{t.minimal}</span>
-              <span className="px-3 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-medium">{t.elegant}</span>
-              <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">{t.corporate}</span>
-            </div>
-            <div className="mt-6 text-gray-700 font-semibold text-sm group-hover:translate-x-1 transition-transform">{t.getStarted}</div>
-          </button>
+              <div className="relative bg-white/[0.06] backdrop-blur-xl rounded-3xl p-8 border border-white/[0.08] group-hover:border-white/20 transition-all duration-300">
+                {/* Icon */}
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl mb-6 shadow-lg shadow-purple-500/20">
+                  {'\u{1F3A8}'}
+                </div>
+
+                <h2 className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-pink-400 group-hover:bg-clip-text transition-all">
+                  {t.personalTitle}
+                </h2>
+                <p className="text-gray-400 mb-6 leading-relaxed text-sm">
+                  {t.personalDesc}
+                </p>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <span className="px-3 py-1.5 bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded-full text-xs font-medium">{t.customColors}</span>
+                  <span className="px-3 py-1.5 bg-pink-500/10 text-pink-300 border border-pink-500/20 rounded-full text-xs font-medium">{t.artistic}</span>
+                  <span className="px-3 py-1.5 bg-orange-500/10 text-orange-300 border border-orange-500/20 rounded-full text-xs font-medium">{t.cartoon}</span>
+                  <span className="px-3 py-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-full text-xs font-medium">{t.retro}</span>
+                </div>
+
+                {/* CTA */}
+                <div className="flex items-center gap-2 text-purple-400 font-semibold text-sm group-hover:gap-3 transition-all">
+                  <span>{t.getStarted}</span>
+                  <span className="text-lg">{'\u2192'}</span>
+                </div>
+              </div>
+            </button>
+
+            {/* Professional & Elite Card */}
+            <button
+              onClick={() => navigate('/form/professional')}
+              className="group relative text-left cursor-pointer"
+            >
+              {/* Card glow on hover */}
+              <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-blue-500/50 via-cyan-500/30 to-emerald-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+
+              <div className="relative bg-white/[0.06] backdrop-blur-xl rounded-3xl p-8 border border-white/[0.08] group-hover:border-white/20 transition-all duration-300">
+                {/* Icon */}
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl mb-6 shadow-lg shadow-blue-500/20">
+                  {'\u{1F4BC}'}
+                </div>
+
+                <h2 className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-cyan-400 group-hover:bg-clip-text transition-all">
+                  {t.professionalTitle}
+                </h2>
+                <p className="text-gray-400 mb-6 leading-relaxed text-sm">
+                  {t.professionalDesc}
+                </p>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <span className="px-3 py-1.5 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded-full text-xs font-medium">{t.minimal}</span>
+                  <span className="px-3 py-1.5 bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 rounded-full text-xs font-medium">{t.elegant}</span>
+                  <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 rounded-full text-xs font-medium">{t.corporate}</span>
+                </div>
+
+                {/* CTA */}
+                <div className="flex items-center gap-2 text-blue-400 font-semibold text-sm group-hover:gap-3 transition-all">
+                  <span>{t.getStarted}</span>
+                  <span className="text-lg">{'\u2192'}</span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Feature strip */}
+        <div className="max-w-5xl mx-auto px-6 pb-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { icon: '\u{26A1}', label: 'Fast', desc: 'Seconds to generate' },
+              { icon: '\u{1F30D}', label: 'Bilingual', desc: 'EN & CN support' },
+              { icon: '\u{2728}', label: 'AI Effects', desc: 'Gemini powered' },
+              { icon: '\u{1F680}', label: 'Deploy', desc: 'Netlify & GitHub' },
+            ].map((f, i) => (
+              <div key={i} className="bg-white/[0.04] backdrop-blur-sm rounded-2xl p-5 border border-white/[0.06] text-center hover:bg-white/[0.08] transition-colors">
+                <div className="text-2xl mb-2">{f.icon}</div>
+                <div className="text-sm font-semibold text-white mb-1">{f.label}</div>
+                <div className="text-xs text-gray-500">{f.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </main>
+
+      {/* Float animation keyframes */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+        }
+      `}</style>
     </div>
   )
 }

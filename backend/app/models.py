@@ -42,15 +42,54 @@ class ResumeData(BaseModel):
 
 
 class PersonalStyle(BaseModel):
-    """\u4e2a\u6027\u5316\u6a21\u5f0f\u98ce\u683c\u914d\u7f6e"""
+    """个性化模式风格配置"""
     keywords: list[str] = []
     primary_color: str = "#6366f1"
+    primary_colors: list[str] = []  # up to 2 primary colors (for shadow/accent)
+    extra_colors: list[str] = []  # secondary colors (for shadow/accent)
+    color_effect: str = "solid"   # legacy single effect (backward compat)
+    color_effects: list[str] = ["solid"]  # multiple effects e.g. ["gradient", "shadow"]
+    splice_direction: str = "horizontal"  # horizontal / diagonal
+    splice_repeat: bool = False  # interval repeat pattern
+    accent_pattern: str = "dots"  # dots/clover/hollow/coin/star/star4/diamond/cross/heart/wave
+    accent_layout: str = "even"  # even / random
     ui_style: str = "cartoon"  # cartoon / minimal / artistic / retro
     bg_image: str = ""  # base64 data URL or image URL
+
+
+class ProfessionalStyle(BaseModel):
+    """职业精英模式风格配置"""
+    accent_color: str = "#c9a96e"  # gold accent
+    header_bg: str = "#1a1a2e"     # dark header bg
+    ui_style: str = "elegant"      # elegant / minimal / corporate
+    keywords: list[str] = []
 
 
 class GenerateRequest(BaseModel):
     mode: str  # "personal" or "professional"
     resume: ResumeData
     style: Optional[PersonalStyle] = None
+    pro_style: Optional[ProfessionalStyle] = None  # professional style config
     lang: str = "zh"  # "zh" or "en" - UI language
+    ai_effects: list = []  # list of {"css": "...", "js": "...", "description": "..."}
+
+
+class AIEffectRequest(BaseModel):
+    description: str
+    api_key: str = ""
+
+
+class AIEffectResponse(BaseModel):
+    css: str = ""
+    js: str = ""
+    description: str = ""
+
+
+class DeployNetlifyRequest(BaseModel):
+    html: str
+
+
+class DeployGitHubPagesRequest(BaseModel):
+    html: str
+    github_token: str
+    repo_name: str = "my-resume-site"
