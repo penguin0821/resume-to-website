@@ -21,7 +21,13 @@ Resume-to-Website 是一个全栈 Web 应用，帮助用户将简历信息快速
 - 头像上传（支持本地上传 + URL 链接）
 - 背景图片上传（个性创意模式）
 - 4 种 UI 风格预设：卡通风、极简风、艺术风、复古风
-- 自定义主题色
+- **多效果组合颜色系统**：纯色 / 渐变 / 阴影 / 点缀 / 拼接，支持多效果叠加（如渐变+阴影、拼接+点缀）
+- **10 种点缀花纹**：圆点、四叶草、空心圆、铜钱纹、五角星、四角星、菱形、十字、爱心、波浪
+- **点缀布局模式**：均匀 / 随机（随机布局每次生成不同效果）
+- **拼接模式**：横向 / 斜向方向 + 间隔重复（如红蓝红蓝红蓝）
+- 职业精英风支持 3 种 UI 预设：优雅 / 极简 / 商务，可自定义点缀色和头部背景
+- AI 特效（基于 Gemini API，用户自主申请 Key）
+- 一键部署到 GitHub Pages / Netlify
 - 中英双语界面（前端应用 + 生成网站均支持 EN/CN 切换）
 - 双语网站生成（可分别填写中英文内容，一键切换）
 - 动态添加多条工作经历 / 教育经历
@@ -73,7 +79,7 @@ npm run dev
 
 ### 4. 打开浏览器
 
-访问终端中显示的地址（通常是 `http://localhost:3000` 或 `http://localhost:3001`）。
+访问终端中显示的地址（通常是 `http://localhost:5173`）。
 
 ## 项目结构
 
@@ -84,6 +90,8 @@ resume-to-website/
 │       ├── main.py                 # FastAPI 入口
 │       ├── routes.py               # API 路由
 │       ├── models.py               # Pydantic 数据模型
+│       ├── ai_service.py           # AI 特效服务（Gemini API）
+│       ├── deploy_service.py       # 部署服务（GitHub Pages / Netlify）
 │       └── generators/
 │           ├── i18n.py             # 双语工具（切换脚本、标签字典）
 │           ├── personal.py         # 个性创意风格生成器
@@ -125,10 +133,11 @@ resume-to-website/
 
 ## 开发计划
 
-- [ ] AI 简历解析（上传 PDF/Word 自动提取信息，基于 Gemini API）
+- [x] AI 特效（基于 Gemini API，用户自主申请 Key）
+- [x] 一键部署到 GitHub Pages / Netlify
+- [ ] AI 简历解析（上传 PDF/Word 自动提取信息）
 - [ ] 更多网站模板和风格
 - [ ] 在线编辑器（实时调整生成网站样式）
-- [ ] 一键部署到 GitHub Pages / Netlify
 - [ ] 移动端响应式优化
 
 ## 贡献
