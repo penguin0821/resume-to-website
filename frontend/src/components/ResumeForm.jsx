@@ -16,6 +16,7 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
   const [hobbyInput, setHobbyInput] = useState('')
   const [hobbyCnInput, setHobbyCnInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   // AI Effects state
   const [aiEffects, setAiEffects] = useState([])
@@ -78,8 +79,14 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    try { await onSubmit(resume, aiEffects) }
-    finally { setLoading(false) }
+    setSubmitError('')
+    try {
+      await onSubmit(resume, aiEffects)
+    } catch (err) {
+      setSubmitError(err.message || 'Generation failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const isPersonal = mode === 'personal'
@@ -141,7 +148,8 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
           </div>
         </div>
         <div className="mt-5">
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.avatarUrl}</label>
+          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.avatarUrl}</label>
+          <p className="text-[10px] text-gray-400 italic mb-2">{isPersonal ? t.avatarHintPersonal : t.avatarHintProfessional}</p>
           <div className="flex items-center gap-4">
             {resume.avatar_url && (
               <img src={resume.avatar_url} alt="avatar" className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
@@ -458,6 +466,14 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
           </button>
         </div>
       </section>
+
+      {/* Error message */}
+      {submitError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {'\u26A0\uFE0F'} {submitError}
+          <button type="button" onClick={() => setSubmitError('')} className="ml-2 text-red-400 hover:text-red-600">&times;</button>
+        </div>
+      )}
 
       {/* Submit */}
       <div className="pt-8">

@@ -45,8 +45,9 @@ class PersonalStyle(BaseModel):
     """个性化模式风格配置"""
     keywords: list[str] = []
     primary_color: str = "#6366f1"
-    primary_colors: list[str] = []  # up to 2 primary colors (for shadow/accent)
-    extra_colors: list[str] = []  # secondary colors (for shadow/accent)
+    primary_colors: list[str] = []  # legacy: up to 2 primary colors
+    extra_colors: list[str] = []  # legacy: secondary colors
+    effect_colors: dict = {}  # NEW: per-effect color arrays e.g. {"solid": ["#xxx"], "gradient": [...], "shadow": [...], "accent": [...], "splice": [...]}
     color_effect: str = "solid"   # legacy single effect (backward compat)
     color_effects: list[str] = ["solid"]  # multiple effects e.g. ["gradient", "shadow"]
     splice_direction: str = "horizontal"  # horizontal / diagonal
@@ -63,6 +64,9 @@ class ProfessionalStyle(BaseModel):
     header_bg: str = "#1a1a2e"     # dark header bg
     ui_style: str = "elegant"      # elegant / minimal / corporate
     keywords: list[str] = []
+    content_layout: str = "classic"  # classic / poster / sidebar
+    photo_layout: str = ""  # legacy alias for content_layout (backward compat)
+    header_image: str = ""  # base64 or URL for poster banner background
 
 
 class GenerateRequest(BaseModel):

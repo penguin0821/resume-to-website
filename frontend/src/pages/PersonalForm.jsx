@@ -8,9 +8,13 @@ function PersonalForm() {
   const { t, lang } = useLang()
   const navigate = useNavigate()
   const [style, setStyle] = useState({
-    primary_colors: ['#6366f1'],
-    primary_color: '#6366f1',
-    extra_colors: [],
+    effect_colors: {
+      solid: ['#6366f1'],
+      gradient: [],
+      splice: [],
+      shadow: [],
+      accent: [],
+    },
     color_effect: 'solid',
     color_effects: ['solid'],
     splice_direction: 'horizontal',
@@ -23,16 +27,43 @@ function PersonalForm() {
   })
   const [keywordInput, setKeywordInput] = useState('')
 
-  // Derive color mode from effects
+  // Derive from effects
   const effects = style.color_effects
-  const needsSplit = effects.includes('shadow') || effects.includes('accent')
+  const ec = style.effect_colors  // shorthand
   const isSolidOnly = effects.length === 1 && effects[0] === 'solid'
-  const maxSimpleColors = isSolidOnly ? 1 : 5
-  const maxPrimary = 2
-  const maxSecondary = 3
 
-  // All colors merged (for gradient/splice preview)
-  const allColors = [...style.primary_colors, ...style.extra_colors]
+  // Base color for previews
+  const baseColor = ec.solid[0] || ec.gradient[0] || ec.splice[0] || '#6366f1'
+
+  // Max colors per effect
+  const maxFor = (effect) => {
+    if (effect === 'solid') return 1
+    if (effect === 'shadow' || effect === 'accent') return 3
+    return 5  // gradient, splice
+  }
+
+  // Helper: toggle color for a specific effect
+  const toggleEffectColor = (effect, color) => {
+    setStyle(prev => {
+      const current = prev.effect_colors[effect] || []
+      const isSel = current.includes(color)
+      const max = maxFor(effect)
+      let next
+      if (isSel) {
+        next = current.filter(c => c !== color)
+      } else if (current.length < max) {
+        next = [...current, color]
+      } else {
+        return prev
+      }
+      return { ...prev, effect_colors: { ...prev.effect_colors, [effect]: next } }
+    })
+  }
+
+  // Helper: clear colors for a specific effect
+  const clearEffectColors = (effect) => {
+    setStyle(prev => ({ ...prev, effect_colors: { ...prev.effect_colors, [effect]: [] } }))
+  }
 
   const addKeyword = () => {
     if (keywordInput.trim()) {
@@ -131,7 +162,7 @@ function PersonalForm() {
                       setStyle(prev => {
                         let newEffects = active
                           ? prev.color_effects.filter(x => x !== e.v)
-                          : [...prev.color_effects.filter(x => x !== 'solid' || e.v === 'solid'), e.v]
+                          : [...new Set([...prev.color_effects.filter(x => x !== 'solid' || e.v === 'solid'), e.v])]
                         if (newEffects.length === 0) newEffects = ['solid']
                         if (newEffects.length > 1 && newEffects.includes('solid')) {
                           newEffects = newEffects.filter(x => x !== 'solid')
@@ -226,189 +257,218 @@ function PersonalForm() {
             </div>
           )}
 
-          {/* Step 2: Color selection - mode depends on effects */}
+          {/* Step 2: Per-effect color pickers */}
           <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">{t.themeColor}</label>
+          <p className="text-[10px] text-gray-400 italic mb-3">{t.perEffectColorHint}</p>
 
-          {needsSplit ? (
-            /* Split mode: Primary + Secondary (for shadow/accent) */
-            <>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-[10px] text-gray-400 italic">{t.splitModeHint}</span>
-                <div className="flex-1" />
-                <button type="button" onClick={() => setStyle(prev => ({ ...prev, primary_colors: [], primary_color: '', extra_colors: [] }))}
-                  className="px-3 py-1.5 rounded-xl text-xs font-medium text-red-500 hover:bg-red-50 border border-red-200 hover:border-red-300 transition-all">
-                  {t.clearAllColors}
-                </button>
-              </div>
-              {/* Primary colors */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{t.primaryColors} ({style.primary_colors.length}/{maxPrimary})</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {['#6366f1','#ec4899','#10b981','#f59e0b','#ef4444','#8b5cf6','#0ea5e9','#f97316','#14b8a6','#e11d48'].map(c => {
-                    const isSel = style.primary_colors.includes(c)
-                    return (
-                      <button key={'p'+c} type="button"
-                        onClick={() => {
-                          if (isSel) {
-                            const n = style.primary_colors.filter(x => x !== c)
-                            setStyle(prev => ({ ...prev, primary_colors: n, primary_color: n[0] || '' }))
-                          } else if (style.primary_colors.length < maxPrimary) {
-                            const n = [...style.primary_colors, c]
-                            setStyle(prev => ({ ...prev, primary_colors: n, primary_color: n[0], extra_colors: prev.extra_colors.filter(x => x !== c) }))
-                          }
-                        }}
-                        className={`relative w-9 h-9 rounded-full border-2 transition-all ${isSel ? 'border-gray-800 scale-110 ring-2 ring-offset-1 ring-gray-300' : 'border-gray-200 hover:scale-110'}`}
-                        style={{ background: c }}>
-                        {isSel && <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold bg-gray-800 text-white rounded-full w-4 h-4 flex items-center justify-center">{style.primary_colors.indexOf(c)+1}</span>}
-                      </button>
-                    )
-                  })}
-                  <input type="color" value={style.primary_colors[0] || '#6366f1'}
-                    onChange={e => {
-                      const c = e.target.value
-                      if (!style.primary_colors.includes(c) && style.primary_colors.length < maxPrimary) {
-                        const n = [...style.primary_colors, c]
-                        setStyle(prev => ({ ...prev, primary_colors: n, primary_color: n[0] }))
-                      }
-                    }}
-                    className="w-9 h-9 rounded-full cursor-pointer border-2 border-dashed border-gray-300" />
-                </div>
-              </div>
-              {/* Secondary colors */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">{t.secondaryColors} ({style.extra_colors.length}/{maxSecondary})</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {['#6366f1','#ec4899','#10b981','#f59e0b','#ef4444','#8b5cf6','#0ea5e9','#f97316','#14b8a6','#e11d48'].map(c => {
-                    const isSel = style.extra_colors.includes(c)
-                    return (
-                      <button key={'s'+c} type="button"
-                        onClick={() => {
-                          if (isSel) {
-                            setStyle(prev => ({ ...prev, extra_colors: prev.extra_colors.filter(x => x !== c) }))
-                          } else if (style.extra_colors.length < maxSecondary) {
-                            setStyle(prev => ({ ...prev, extra_colors: [...prev.extra_colors, c], primary_colors: prev.primary_colors.filter(x => x !== c) }))
-                          }
-                        }}
-                        className={`relative w-9 h-9 rounded-full border-2 transition-all ${isSel ? 'border-purple-400 scale-105 ring-2 ring-offset-1 ring-purple-200' : 'border-gray-200 hover:scale-110'}`}
-                        style={{ background: c }}>
-                        {isSel && <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold bg-purple-600 text-white rounded-full w-4 h-4 flex items-center justify-center">+</span>}
-                      </button>
-                    )
-                  })}
-                  <input type="color" value={style.extra_colors[0] || '#6366f1'}
-                    onChange={e => {
-                      const c = e.target.value
-                      if (!style.extra_colors.includes(c) && style.extra_colors.length < maxSecondary) {
-                        setStyle(prev => ({ ...prev, extra_colors: [...prev.extra_colors, c] }))
-                      }
-                    }}
-                    className="w-9 h-9 rounded-full cursor-pointer border-2 border-dashed border-purple-300" />
-                </div>
-              </div>
-            </>
-          ) : (
-            /* Simple mode: flat color list (for solid/gradient/splice, no primary/secondary) */
-            <>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-[10px] text-gray-400 italic">{isSolidOnly ? t.solidModeHint : t.multiModeHint}</span>
-                <div className="flex-1" />
-                <button type="button" onClick={() => setStyle(prev => ({ ...prev, primary_colors: [], primary_color: '', extra_colors: [] }))}
-                  className="px-3 py-1.5 rounded-xl text-xs font-medium text-red-500 hover:bg-red-50 border border-red-200 hover:border-red-300 transition-all">
-                  {t.clearAllColors}
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                {['#6366f1','#ec4899','#10b981','#f59e0b','#ef4444','#8b5cf6','#0ea5e9','#f97316','#14b8a6','#e11d48'].map(c => {
-                  const isSel = allColors.includes(c)
-                  return (
-                    <button key={c} type="button"
-                      onClick={() => {
-                        if (isSel) {
-                          const n = allColors.filter(x => x !== c)
-                          setStyle(prev => ({ ...prev, primary_colors: n.slice(0, 1) || [], primary_color: n[0] || '', extra_colors: n.slice(1) }))
-                        } else if (allColors.length < maxSimpleColors) {
-                          const n = [...allColors, c]
-                          setStyle(prev => ({ ...prev, primary_colors: n.slice(0, 1) || [], primary_color: n[0], extra_colors: n.slice(1) }))
-                        }
-                      }}
-                      className={`relative w-10 h-10 rounded-full border-2 transition-all ${isSel ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300' : 'border-gray-200 hover:scale-110'}`}
-                      style={{ background: c }}>
-                      {isSel && <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold bg-gray-800 text-white rounded-full w-4 h-4 flex items-center justify-center">{allColors.indexOf(c)+1}</span>}
+          {/* Render color picker for each active effect */}
+          {(() => {
+            const presetColors = ['#6366f1','#ec4899','#10b981','#f59e0b','#ef4444','#8b5cf6','#0ea5e9','#f97316','#14b8a6','#e11d48']
+            const effectMeta = {
+              solid: { label: t.effectSolid, hint: t.solidColorHint || 'Select 1 color', ringColor: 'ring-gray-400', bgColor: 'bg-gray-800' },
+              gradient: { label: t.effectGradient, hint: t.gradientColorHint || 'Select up to 5 colors', ringColor: 'ring-indigo-400', bgColor: 'bg-indigo-600' },
+              shadow: { label: t.effectShadow, hint: t.shadowColorHint || 'Shadow layer colors (up to 3)', ringColor: 'ring-violet-400', bgColor: 'bg-violet-600' },
+              accent: { label: t.effectAccent, hint: t.accentColorHint || 'Pattern colors (up to 3)', ringColor: 'ring-amber-400', bgColor: 'bg-amber-600' },
+              splice: { label: t.effectSplice, hint: t.spliceColorHint || 'Select up to 5 colors', ringColor: 'ring-rose-400', bgColor: 'bg-rose-600' },
+            }
+            return effects.map(eff => {
+              const meta = effectMeta[eff] || effectMeta.solid
+              const colors = ec[eff] || []
+              const max = maxFor(eff)
+              return (
+                <div key={eff} className="bg-white/60 rounded-xl p-3 border border-gray-200 mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold text-white px-2 py-0.5 rounded-md ${meta.bgColor}`}>{meta.label}</span>
+                      <span className="text-[10px] text-gray-500">({colors.length}/{max})</span>
+                    </div>
+                    <button type="button" onClick={() => clearEffectColors(eff)}
+                      className="px-2 py-1 rounded-lg text-[10px] font-medium text-red-500 hover:bg-red-50 border border-red-200 transition-all">
+                      {t.clearEffectColors || 'Clear'}
                     </button>
-                  )
-                })}
-                <input type="color" value={allColors[0] || '#6366f1'}
-                  onChange={e => {
-                    const c = e.target.value
-                    if (!allColors.includes(c) && allColors.length < maxSimpleColors) {
-                      const n = [...allColors, c]
-                      setStyle(prev => ({ ...prev, primary_colors: n.slice(0, 1) || [], primary_color: n[0], extra_colors: n.slice(1) }))
-                    }
-                  }}
-                  className="w-10 h-10 rounded-full cursor-pointer border-2 border-dashed border-gray-300 hover:border-indigo-400 transition-colors" />
-              </div>
-            </>
-          )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {presetColors.map(c => {
+                      const isSel = colors.includes(c)
+                      const idx = colors.indexOf(c)
+                      return (
+                        <button key={eff+c} type="button"
+                          onClick={() => toggleEffectColor(eff, c)}
+                          className={`relative w-8 h-8 rounded-full border-2 transition-all ${isSel ? `border-gray-700 scale-110 ring-2 ring-offset-1 ${meta.ringColor}` : 'border-gray-200 hover:scale-110'}`}
+                          style={{ background: c }}>
+                          {isSel && <span className={`absolute -top-1.5 -right-1.5 text-[8px] font-bold text-white rounded-full w-4 h-4 flex items-center justify-center ${meta.bgColor}`}>{idx+1}</span>}
+                        </button>
+                      )
+                    })}
+                    <input type="color" value={colors[0] || '#6366f1'}
+                      onChange={e => {
+                        const c = e.target.value
+                        setStyle(prev => {
+                          const current = prev.effect_colors[eff] || []
+                          if (current.includes(c)) return prev
+                          let next
+                          if (current.length > 0) {
+                            next = [c, ...current.slice(1)]
+                          } else if (current.length < maxFor(eff)) {
+                            next = [c]
+                          } else {
+                            return prev
+                          }
+                          return { ...prev, effect_colors: { ...prev.effect_colors, [eff]: next } }
+                        })
+                      }}
+                      className="w-8 h-8 rounded-full cursor-pointer border-2 border-dashed border-gray-300 hover:border-indigo-400 transition-colors" />
+                  </div>
+                </div>
+              )
+            })
+          })()}
 
           {/* Preview */}
           <div className="bg-white/60 rounded-xl p-4 border border-gray-200 mt-4">
             <span className="text-[10px] text-gray-400 mb-2 block">{t.previewEffect}</span>
             {(() => {
-              const pc = style.primary_colors
-              const sc = style.extra_colors
-              const ac = [...pc, ...sc]
-              const base = pc[0] || ac[0] || '#6366f1'
+              const gradColors = ec.gradient || []
+              const spliceColors = ec.splice || []
+              const shadowColors = ec.shadow || []
+              const accentColors = ec.accent || []
+              const solidColor = ec.solid[0] || '#6366f1'
+              const base = solidColor
               const previews = []
 
-              if (effects.includes('gradient') && ac.length > 1) {
-                previews.push(<div key="grad" className="h-8 rounded-lg mb-2" style={{ background: `linear-gradient(135deg, ${ac.join(', ')})` }} title="Gradient" />)
+              // Solid preview
+              if (effects.includes('solid')) {
+                previews.push(<div key="solid" className="h-8 rounded-lg mb-2" style={{ background: solidColor }} title="Solid" />)
               }
-              if (effects.includes('splice') && ac.length > 1) {
-                const cols = style.splice_repeat ? [...ac, ...ac, ...ac] : ac
+
+              // Gradient preview
+              if (effects.includes('gradient') && gradColors.length > 1) {
+                previews.push(<div key="grad" className="h-8 rounded-lg mb-2" style={{ background: `linear-gradient(135deg, ${gradColors.join(', ')})` }} title="Gradient" />)
+              } else if (effects.includes('gradient') && gradColors.length === 1) {
+                previews.push(<div key="grad" className="h-8 rounded-lg mb-2" style={{ background: gradColors[0] }} title="Gradient" />)
+              }
+
+              // Splice preview
+              if (effects.includes('splice') && spliceColors.length > 1) {
+                const cols = style.splice_repeat ? [...spliceColors, ...spliceColors, ...spliceColors] : spliceColors
                 const dir = style.splice_direction === 'diagonal' ? '135deg' : '90deg'
                 const stops = []
                 const step = 100 / cols.length
                 cols.forEach((c, i) => { stops.push(`${c} ${i*step}%`, `${c} ${(i+1)*step}%`) })
                 previews.push(<div key="splice" className="h-8 rounded-lg mb-2" style={{ background: `linear-gradient(${dir}, ${stops.join(', ')})` }} title="Splice" />)
               }
+
+              // Shadow preview - multi-color layered shadows
               if (effects.includes('shadow')) {
-                const shadows = sc.length > 0
-                  ? sc.map((c, i) => `${(i+1)*4}px ${(i+1)*6}px ${16+i*8}px ${c}50`).join(', ')
-                  : `0 8px 24px ${base}40`
+                let shadows
+                if (shadowColors.length > 1) {
+                  const layers = [`0 4px 8px ${shadowColors[0]}30`]
+                  shadowColors.forEach((c, i) => {
+                    layers.push(`${(i+1)*3}px ${(i+1)*5}px ${12+i*10}px ${c}60`)
+                  })
+                  shadows = layers.join(', ')
+                } else if (shadowColors.length === 1) {
+                  shadows = `0 8px 24px ${shadowColors[0]}40`
+                } else {
+                  shadows = `0 8px 24px ${base}40`
+                }
                 previews.push(<div key="shadow" className="h-10 rounded-lg mx-6 mb-2" style={{ background: base, boxShadow: shadows }} title="Shadow" />)
               }
-              if (effects.includes('accent') && sc.length > 0) {
+
+              // Accent preview with pattern
+              if (effects.includes('accent') && accentColors.length > 0) {
+                const pat = style.accent_pattern || 'dots'
+                const s = 12
+                const patId = 'prev-accent'
+                const shapeFor = (pattern, color, sz) => {
+                  const hr = sz / 2
+                  switch (pattern) {
+                    case 'clover': {
+                      const cr = sz * 0.3
+                      return <>
+                        <ellipse cx={hr - cr*0.3} cy={hr} rx={cr} ry={cr*0.6} fill={color} opacity={0.4}/>
+                        <ellipse cx={hr + cr*0.3} cy={hr} rx={cr} ry={cr*0.6} fill={color} opacity={0.4}/>
+                        <ellipse cx={hr} cy={hr - cr*0.3} rx={cr*0.6} ry={cr} fill={color} opacity={0.4}/>
+                        <ellipse cx={hr} cy={hr + cr*0.3} rx={cr*0.6} ry={cr} fill={color} opacity={0.4}/>
+                      </>
+                    }
+                    case 'hollow': return <circle cx={hr} cy={hr} r={hr-1} fill="none" stroke={color} strokeWidth="1" opacity={0.5}/>
+                    case 'coin': {
+                      const cr = sz * 0.5
+                      return <>
+                        <circle cx="0" cy="0" r={cr} fill="none" stroke={color} strokeWidth="0.8" opacity={0.4}/>
+                        <circle cx={sz} cy="0" r={cr} fill="none" stroke={color} strokeWidth="0.8" opacity={0.4}/>
+                        <circle cx={hr} cy={hr} r={cr} fill="none" stroke={color} strokeWidth="0.8" opacity={0.4}/>
+                        <circle cx="0" cy={sz} r={cr} fill="none" stroke={color} strokeWidth="0.8" opacity={0.4}/>
+                        <circle cx={sz} cy={sz} r={cr} fill="none" stroke={color} strokeWidth="0.8" opacity={0.4}/>
+                      </>
+                    }
+                    case 'star': {
+                      const pts = Array.from({length: 10}, (_, i) => {
+                        const a = Math.PI/2 + i * Math.PI/5
+                        const rad = i%2===0 ? hr-1 : hr*0.4
+                        return `${hr + rad*Math.cos(a)},${hr - rad*Math.sin(a)}`
+                      }).join(' ')
+                      return <polygon points={pts} fill={color} opacity={0.4}/>
+                    }
+                    case 'star4': return <polygon points={`${hr},0 ${hr+1.5},${hr-1.5} ${sz},${hr} ${hr+1.5},${hr+1.5} ${hr},${sz} ${hr-1.5},${hr+1.5} 0,${hr} ${hr-1.5},${hr-1.5}`} fill={color} opacity={0.4}/>
+                    case 'diamond': return <polygon points={`${hr},0 ${sz},${hr} ${hr},${sz} 0,${hr}`} fill={color} opacity={0.4}/>
+                    case 'cross': {
+                      const w = Math.max(1, sz/4)
+                      return <>
+                        <rect x={hr-w} y={1} width={w*2} height={sz-2} fill={color} opacity={0.4}/>
+                        <rect x={1} y={hr-w} width={sz-2} height={w*2} fill={color} opacity={0.4}/>
+                      </>
+                    }
+                    case 'heart': {
+                      const hhr = sz * 0.25
+                      return <>
+                        <circle cx={hr-hhr} cy={hr-hhr*0.5} r={hhr} fill={color} opacity={0.4}/>
+                        <circle cx={hr+hhr} cy={hr-hhr*0.5} r={hhr} fill={color} opacity={0.4}/>
+                        <polygon points={`${hr-hhr*2},${hr} ${hr},${sz} ${hr+hhr*2},${hr}`} fill={color} opacity={0.4}/>
+                      </>
+                    }
+                    case 'wave': return <path d={`M0,${hr} Q${sz/4},${hr-3} ${sz/2},${hr} T${sz},${hr}`} fill="none" stroke={color} strokeWidth="1.5" opacity={0.5}/>
+                    default: return <circle cx={hr} cy={hr} r={hr*0.4} fill={color} opacity={0.5}/>
+                  }
+                }
+                // Multi-color accent: wider pattern tile with shapes in different colors
+                const patternWidth = s * accentColors.length
                 previews.push(
                   <div key="accent" className="h-8 rounded-lg relative overflow-hidden mb-2" style={{ background: base }}>
-                    <svg className="absolute inset-0 w-full h-full opacity-30" xmlns="http://www.w3.org/2000/svg">
-                      <pattern id="pdots" width="24" height="24" patternUnits="userSpaceOnUse">
-                        {sc.map((dc, idx) => <circle key={idx} cx={5+(idx*7)%15} cy={5+(idx*5)%12} r="3" fill={dc} />)}
+                    <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                      <pattern id={patId} width={patternWidth} height={s} patternUnits="userSpaceOnUse">
+                        {accentColors.map((col, idx) => (
+                          <g key={idx} transform={`translate(${idx * s}, 0)`}>
+                            {shapeFor(pat, col, s)}
+                          </g>
+                        ))}
                       </pattern>
-                      <rect width="100%" height="100%" fill="url(#pdots)" />
+                      <rect width="100%" height="100%" fill={`url(#${patId})`} />
                     </svg>
-                    {sc[1] && <div className="absolute top-0 right-0 w-6 h-6" style={{ background: sc[1], clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }} />}
-                    {sc[1] && <div className="absolute bottom-0 left-0 w-6 h-6" style={{ background: sc[1], clipPath: 'polygon(0 0, 0 100%, 100% 100%)' }} />}
                   </div>
                 )
               }
+
               if (previews.length === 0) {
-                previews.push(<div key="solid" className="h-8 rounded-lg" style={{ background: base }} />)
+                previews.push(<div key="empty" className="h-8 rounded-lg bg-gray-100" />)
               }
               return previews
             })()}
-            {allColors.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {allColors.map((c, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 text-[10px] text-gray-500">
-                    <span className="w-3 h-3 rounded-full inline-block" style={{ background: c }} /> {c}
-                  </span>
-                ))}
-              </div>
-            )}
+            {/* Color chips summary */}
+            {(() => {
+              const allEffectColors = Object.entries(ec).flatMap(([eff, cols]) => (cols || []).map(c => ({ eff, c })))
+              if (allEffectColors.length === 0) return null
+              return (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {allEffectColors.map(({ eff, c }, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 text-[10px] text-gray-500">
+                      <span className="w-3 h-3 rounded-full inline-block" style={{ background: c }} /> {c}
+                    </span>
+                  ))}
+                </div>
+              )
+            })()}
           </div>
         </div>
         <div>
@@ -465,9 +525,14 @@ function PersonalForm() {
   )
 
   const handleSubmit = async (resumeData, aiEffects) => {
+    const ec = style.effect_colors
     const stylePayload = {
       ...style,
-      primary_color: style.primary_colors[0] || '#6366f1',
+      // Derive primary_color from effect_colors for backward compat
+      primary_color: ec.solid[0] || ec.gradient[0] || ec.splice[0] || '#6366f1',
+      // Legacy fields for backward compat
+      primary_colors: ec.solid || [],
+      extra_colors: ec.accent || ec.shadow || [],
     }
     const response = await fetch('/api/generate', {
       method: 'POST',

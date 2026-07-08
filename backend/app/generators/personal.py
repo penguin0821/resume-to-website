@@ -98,15 +98,9 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
     if style is None:
         style = PersonalStyle()
     preset = STYLE_PRESETS.get(style.ui_style, STYLE_PRESETS["cartoon"])
-    # Support primary_colors array
-    primary_colors = getattr(style, 'primary_colors', []) or []
-    pc = primary_colors[0] if primary_colors else style.primary_color
-    pc2 = _hex_to_darker(pc, 0.75)
-    bg_light = _hex_to_lighter(pc, 0.92)
     bg_image = getattr(style, 'bg_image', '')
 
     # Multi-effect support
-    extra_colors = getattr(style, 'extra_colors', []) or []
     color_effects = getattr(style, 'color_effects', []) or []
     if not color_effects:
         # Backward compat: use single color_effect
@@ -115,35 +109,74 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
     splice_direction = getattr(style, 'splice_direction', 'horizontal') or 'horizontal'
     splice_repeat = getattr(style, 'splice_repeat', False)
 
-    primary_list = primary_colors if primary_colors else [pc]
+    # NEW: Per-effect color arrays (effect_colors)
+    effect_colors = getattr(style, 'effect_colors', {}) or {}
 
-    # For gradient/splice: all colors merged (no primary/secondary distinction)
-    all_colors = primary_list + extra_colors
+    # Backward compat: if effect_colors is empty, build from legacy fields
+    if not effect_colors:
+        primary_colors = getattr(style, 'primary_colors', []) or []
+        extra_colors = getattr(style, 'extra_colors', []) or []
+        primary_list = primary_colors if primary_colors else [style.primary_color]
+        all_legacy = primary_list + extra_colors
+        effect_colors = {
+            'solid': [style.primary_color],
+            'gradient': all_legacy if len(all_legacy) > 1 else primary_list,
+            'splice': all_legacy if len(all_legacy) > 1 else primary_list,
+            'shadow': extra_colors if extra_colors else [],
+            'accent': extra_colors if extra_colors else [],
+        }
 
-    # Gradient: smooth transition across all colors
-    if len(all_colors) > 1:
-        gradient_css = f"linear-gradient(135deg, {', '.join(all_colors)})"
-        gradient_h_css = f"linear-gradient(90deg, {', '.join(all_colors)})"
+    # Read colors per effect
+    solid_colors = effect_colors.get('solid', []) or [style.primary_color]
+    gradient_colors = effect_colors.get('gradient', []) or []
+    splice_colors_list = effect_colors.get('splice', []) or []
+    shadow_colors = effect_colors.get('shadow', []) or []
+    accent_colors = effect_colors.get('accent', []) or []
+
+    # Base color (pc) for templates: solid[0] > gradient[0] > splice[0] > default
+    pc = solid_colors[0] if solid_colors else (gradient_colors[0] if gradient_colors else (splice_colors_list[0] if splice_colors_list else style.primary_color))
+    pc2 = _hex_to_darker(pc, 0.75)
+    bg_light = _hex_to_lighter(pc, 0.92)
+    primary_list = solid_colors if solid_colors else [pc]
+
+    # All colors merged (for backward compat in template)
+    all_colors = gradient_colors if gradient_colors else (splice_colors_list if splice_colors_list else primary_list)
+
+    # Gradient: smooth transition across gradient colors
+    if len(gradient_colors) > 1:
+        gradient_css = f"linear-gradient(135deg, {', '.join(gradient_colors)})"
+        gradient_h_css = f"linear-gradient(90deg, {', '.join(gradient_colors)})"
+    elif gradient_colors:
+        gradient_css = gradient_colors[0]
+        gradient_h_css = gradient_colors[0]
     else:
         gradient_css = pc
         gradient_h_css = pc
 
-    # Shadow: multi-layered colored shadows from secondary colors
-    if extra_colors:
-        shadow_layers = []
-        for i, sc in enumerate(extra_colors):
-            ox = (i + 1) * 4
-            oy = (i + 1) * 6
-            blur = 16 + i * 8
-            shadow_layers.append(f"{ox}px {oy}px {blur}px {sc}50")
-        shadow_css = ", ".join(shadow_layers)
+    # Shadow: multi-layered colored shadows from shadow colors
+    if shadow_colors:
+        if len(shadow_colors) > 1:
+            # Multi-color shadow: gradient-like layered shadows
+            shadow_layers = []
+            for i, sc in enumerate(shadow_colors):
+                ox = (i + 1) * 3
+                oy = (i + 1) * 5
+                blur = 12 + i * 10
+                shadow_layers.append(f"{ox}px {oy}px {blur}px {sc}60")
+            # Add a soft base shadow
+            shadow_layers.insert(0, f"0 4px 8px {shadow_colors[0]}30")
+            shadow_css = ", ".join(shadow_layers)
+        else:
+            # Single color shadow
+            shadow_css = f"0 8px 24px {shadow_colors[0]}40"
     else:
         shadow_css = f"0 8px 24px {pc}20"
 
     # Accent: SVG pattern generation
     accent_pattern = getattr(style, 'accent_pattern', 'dots') or 'dots'
     accent_layout = getattr(style, 'accent_layout', 'even') or 'even'
-    accent_colors = extra_colors if extra_colors else [_hex_to_lighter(pc, 0.6)]
+    if not accent_colors and 'accent' in color_effects:
+        accent_colors = [_hex_to_lighter(pc, 0.6)]
 
     import random as _rnd
     _rnd.seed()  # fresh random each time
@@ -199,32 +232,47 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
         else:  # dots (default)
             return f"<circle cx='{r}' cy='{r}' r='{r*0.4}' fill='{color}' opacity='0.25'/>"
 
-    # Build the full SVG for the pattern
-    if accent_layout == 'random':
-        # Random layout: scatter shapes across a larger canvas
-        canvas = 200
-        shapes = ""
-        for _ in range(30):
-            x = _rnd.uniform(0, canvas - 10)
-            y = _rnd.uniform(0, canvas - 10)
-            s = _rnd.uniform(6, 16)
-            c = _rnd.choice(accent_colors)
-            shape = _shape_svg(accent_pattern, c, s)
-            shapes += f"<g transform='translate({x:.1f},{y:.1f})'>{shape}</g>"
-        full_svg = f"<svg xmlns='http://www.w3.org/2000/svg' width='{canvas}' height='{canvas}'>{shapes}</svg>"
-    else:
-        # Even layout: use SVG <pattern> for uniform spacing
-        tile = 30
-        c = accent_colors[0]
-        shape = _shape_svg(accent_pattern, c, tile)
-        full_svg = f"<svg xmlns='http://www.w3.org/2000/svg' width='{tile}' height='{tile}'>{shape}</svg>"
+    # Build the full SVG for the pattern (only when accent colors exist)
+    dot_pattern_css = ""
+    corner_color = _hex_to_darker(pc, 0.7)
+    if accent_colors:
+        if accent_layout == 'random':
+            # Random layout: scatter shapes across a larger canvas
+            canvas = 200
+            shapes = ""
+            for _ in range(30):
+                x = _rnd.uniform(0, canvas - 10)
+                y = _rnd.uniform(0, canvas - 10)
+                s = _rnd.uniform(6, 16)
+                c = _rnd.choice(accent_colors)
+                shape = _shape_svg(accent_pattern, c, s)
+                shapes += f"<g transform='translate({x:.1f},{y:.1f})'>{shape}</g>"
+            full_svg = f"<svg xmlns='http://www.w3.org/2000/svg' width='{canvas}' height='{canvas}'>{shapes}</svg>"
+        else:
+            # Even layout: use SVG <pattern> for uniform spacing
+            if len(accent_colors) > 1:
+                # Multi-color even: larger tile with shapes in different colors
+                cols = len(accent_colors)
+                tile_single = 30
+                tile = tile_single * cols
+                shapes = ""
+                for i, c in enumerate(accent_colors):
+                    x = i * tile_single
+                    shape = _shape_svg(accent_pattern, c, tile_single)
+                    shapes += f"<g transform='translate({x},0)'>{shape}</g>"
+                full_svg = f"<svg xmlns='http://www.w3.org/2000/svg' width='{tile}' height='{tile_single}'>{shapes}</svg>"
+            else:
+                tile = 30
+                c = accent_colors[0]
+                shape = _shape_svg(accent_pattern, c, tile)
+                full_svg = f"<svg xmlns='http://www.w3.org/2000/svg' width='{tile}' height='{tile}'>{shape}</svg>"
 
-    svg_enc = full_svg.replace("'", "%27").replace('"', "%22").replace('#', "%23")
-    dot_pattern_css = f"url(\"data:image/svg+xml,{svg_enc}\") repeat"
-    corner_color = extra_colors[1] if len(extra_colors) > 1 else _hex_to_darker(pc, 0.7)
+        svg_enc = full_svg.replace("'", "%27").replace('"', "%22").replace('#', "%23")
+        dot_pattern_css = f"url(\"data:image/svg+xml,{svg_enc}\") repeat"
+        corner_color = accent_colors[1] if len(accent_colors) > 1 else _hex_to_darker(pc, 0.7)
 
     # Splice: hard-edge color blocks with direction and repeat support
-    splice_colors = all_colors if len(all_colors) > 1 else [pc]
+    splice_colors = splice_colors_list if splice_colors_list else [pc]
     if splice_repeat and len(splice_colors) > 1:
         # Interval repeat: e.g. red,blue,red,blue,red,blue
         repeated = splice_colors * 3  # triple the pattern for coverage
@@ -246,8 +294,8 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
         splice_css = f"linear-gradient(90deg, {', '.join(stops)})"
     splice_v_css = f"linear-gradient(180deg, {', '.join(stops)})"
 
-    # Accent color (first extra color or darker primary)
-    accent_color = extra_colors[0] if extra_colors else pc2
+    # Accent color (first accent color or darker primary)
+    accent_color = accent_colors[0] if accent_colors else pc2
 
     # Expand template placeholders in all preset values
     def _expand(val):
@@ -260,7 +308,8 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
         result[k] = _expand(v)
     result["primary_color"] = pc
     result["bg_image"] = bg_image
-    result["extra_colors"] = extra_colors
+    result["extra_colors"] = accent_colors  # legacy: accent colors
+    result["effect_colors"] = effect_colors  # NEW: per-effect colors
     result["color_effects"] = color_effects
     result["all_colors"] = all_colors
     result["gradient_css"] = gradient_css
@@ -274,6 +323,7 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
     result["primary_list"] = primary_list
     result["accent_pattern"] = accent_pattern
     result["accent_layout"] = accent_layout
+    result["shadow_colors"] = shadow_colors
     return result
 
 
@@ -305,7 +355,11 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
 
     # Multi-color effects (array-based)
     color_effects = cfg.get("color_effects", ["solid"])
-    extra_colors = cfg.get("extra_colors", [])
+    effect_colors_raw = cfg.get("effect_colors", {})
+    gradient_colors_list = effect_colors_raw.get('gradient', []) or []
+    splice_colors_list = effect_colors_raw.get('splice', []) or []
+    shadow_colors_list = effect_colors_raw.get('shadow', []) or []
+    accent_colors_list = effect_colors_raw.get('accent', []) or []
     all_colors = cfg.get("all_colors", [pc])
     gradient_css = cfg.get("gradient_css", pc)
     gradient_h_css = cfg.get("gradient_h_css", pc)
@@ -320,10 +374,10 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
     extra_body_css = ""
     corner_html = ""
 
-    has_gradient = 'gradient' in color_effects and len(all_colors) > 1
+    has_gradient = 'gradient' in color_effects and len(gradient_colors_list) > 1
     has_shadow = 'shadow' in color_effects
-    has_accent = 'accent' in color_effects and extra_colors
-    has_splice = 'splice' in color_effects and len(all_colors) > 1
+    has_accent = 'accent' in color_effects and len(accent_colors_list) > 0
+    has_splice = 'splice' in color_effects and len(splice_colors_list) > 1
 
     # Gradient: smooth transition on header/tags
     if has_gradient:
@@ -348,16 +402,22 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             f'background:{corner_color};opacity:0.15;'
             f'clip-path:polygon(0 0, 100% 0, 0 100%);"></div>'
             f'<div style="position:absolute;bottom:0;right:0;width:80px;height:80px;'
-            f'background:{extra_colors[0]};opacity:0.15;'
+            f'background:{accent_colors_list[0]};opacity:0.15;'
             f'clip-path:polygon(100% 0, 100% 100%, 0 100%);"></div>'
             f'<div style="position:absolute;top:20%;right:10%;width:30px;height:30px;'
-            f'border-radius:50%;background:{extra_colors[0]};opacity:0.12;"></div>'
+            f'border-radius:50%;background:{accent_colors_list[0]};opacity:0.12;"></div>'
             f'<div style="position:absolute;bottom:20%;left:8%;width:20px;height:20px;'
             f'border-radius:50%;background:{corner_color};opacity:0.1;"></div>'
         )
 
-    # Build tag styles list for cycling
+    # Build tag styles list for cycling through colors
     tag_styles_list = [tag_style]
+    if has_gradient and len(gradient_colors_list) > 1:
+        for c in gradient_colors_list:
+            tag_styles_list.append(f"background:{c};color:white;border-radius:50px;padding:10px 24px;")
+    elif has_splice and len(splice_colors_list) > 1:
+        for c in splice_colors_list:
+            tag_styles_list.append(f"background:{c};color:white;border-radius:50px;padding:10px 24px;")
 
     # If bg_image is set, override body_bg
     if bg_image:
@@ -390,36 +450,80 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             return ""
         label = t("work_experience")[0] if lang_code == "en" else t("work_experience")[1]
         items = ""
-        for exp in resume.work_experiences:
+        total = len(resume.work_experiences)
+        for idx, exp in enumerate(resume.work_experiences):
             pos = exp.position if lang_code == "en" else (exp.position_cn or exp.position)
             comp = exp.company if lang_code == "en" else (exp.company_cn or exp.company)
             dur = exp.duration if lang_code == "en" else (exp.duration_cn or exp.duration)
             desc = exp.description if lang_code == "en" else (exp.description_cn or exp.description)
-            items += f'''
-            <div style="background:{card_bg};padding:24px;margin-bottom:16px;border-radius:{br};box-shadow:{cs};border:{card_border};">
-                <h3 style="margin:0 0 4px 0;font-size:18px;color:#1a1a2e;">{pos}</h3>
-                <p style="margin:0 0 4px 0;color:{pc};font-weight:bold;">{comp}</p>
-                <p style="margin:0 0 8px 0;color:#999;font-size:14px;">{dur}</p>
-                <p style="margin:0;color:#555;line-height:1.6;">{desc}</p>
-            </div>'''
+            # Alternating timeline for 2+ items
+            if total >= 2:
+                is_right = idx % 2 == 0
+                dot_color = tag_styles_list[idx % len(tag_styles_list)].split(';')[0].replace('background:', '') if tag_styles_list else pc
+                if is_right:
+                    items += f'''
+                <div style="display:flex;margin-bottom:24px;">
+                    <div style="flex:1;padding-right:24px;text-align:right;">
+                        <div style="background:{card_bg};padding:20px;border-radius:{br};box-shadow:{cs};border:{card_border};">
+                            <h3 style="margin:0 0 4px 0;font-size:18px;color:#1a1a2e;">{pos}</h3>
+                            <p style="margin:0 0 4px 0;color:{pc};font-weight:bold;">{comp}</p>
+                            <p style="margin:0 0 8px 0;color:#999;font-size:14px;">{dur}</p>
+                            <p style="margin:0;color:#555;line-height:1.6;">{desc}</p>
+                        </div>
+                    </div>
+                    <div style="position:relative;width:20px;flex-shrink:0;">
+                        <div style="position:absolute;left:50%;top:24px;transform:translateX(-50%);width:16px;height:16px;background:{pc};border-radius:50%;border:3px solid white;z-index:1;"></div>
+                        <div style="position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);width:3px;background:{pc}30;"></div>
+                    </div>
+                    <div style="flex:1;"></div>
+                </div>'''
+                else:
+                    items += f'''
+                <div style="display:flex;margin-bottom:24px;">
+                    <div style="flex:1;"></div>
+                    <div style="position:relative;width:20px;flex-shrink:0;">
+                        <div style="position:absolute;left:50%;top:24px;transform:translateX(-50%);width:16px;height:16px;background:{pc};border-radius:50%;border:3px solid white;z-index:1;"></div>
+                        <div style="position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);width:3px;background:{pc}30;"></div>
+                    </div>
+                    <div style="flex:1;padding-left:24px;">
+                        <div style="background:{card_bg};padding:20px;border-radius:{br};box-shadow:{cs};border:{card_border};">
+                            <h3 style="margin:0 0 4px 0;font-size:18px;color:#1a1a2e;">{pos}</h3>
+                            <p style="margin:0 0 4px 0;color:{pc};font-weight:bold;">{comp}</p>
+                            <p style="margin:0 0 8px 0;color:#999;font-size:14px;">{dur}</p>
+                            <p style="margin:0;color:#555;line-height:1.6;">{desc}</p>
+                        </div>
+                    </div>
+                </div>'''
+            else:
+                # Single item: standard card
+                items += f'''
+                <div style="background:{card_bg};padding:24px;margin-bottom:16px;border-radius:{br};box-shadow:{cs};border:{card_border};">
+                    <h3 style="margin:0 0 4px 0;font-size:18px;color:#1a1a2e;">{pos}</h3>
+                    <p style="margin:0 0 4px 0;color:{pc};font-weight:bold;">{comp}</p>
+                    <p style="margin:0 0 8px 0;color:#999;font-size:14px;">{dur}</p>
+                    <p style="margin:0;color:#555;line-height:1.6;">{desc}</p>
+                </div>'''
         return f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:24px;">{decor} {label}</h2>{items}</section>'
 
     def _build_edu(lang_code):
         if not resume.educations:
             return ""
         label = t("education")[0] if lang_code == "en" else t("education")[1]
+        total = len(resume.educations)
         items = ""
         for edu in resume.educations:
             school = edu.school if lang_code == "en" else (edu.school_cn or edu.school)
             major = edu.major if lang_code == "en" else (edu.major_cn or edu.major)
             dur = edu.duration if lang_code == "en" else (edu.duration_cn or edu.duration)
             items += f'''
-            <div style="background:{card_bg};padding:24px;margin-bottom:16px;border-radius:{br};box-shadow:{cs};border:{card_border};">
+            <div style="background:{card_bg};padding:24px;border-radius:{br};box-shadow:{cs};border:{card_border};">
                 <h3 style="margin:0 0 4px 0;font-size:18px;color:#1a1a2e;">{school}</h3>
                 <p style="margin:0 0 4px 0;color:{pc};">{major}</p>
                 <p style="margin:0;color:#999;font-size:14px;">{dur}</p>
             </div>'''
-        return f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:24px;">{decor} {label}</h2>{items}</section>'
+        # 2-column grid if 2+ items, else single column
+        grid_style = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;' if total >= 2 else ''
+        return f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:24px;">{decor} {label}</h2><div style="{grid_style}">{items}</div></section>'
 
     def _build_skills(lang_code):
         if lang_code == "en":
@@ -429,12 +533,28 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
         if not skill_list:
             return ""
         label = t("skills")[0] if lang_code == "en" else t("skills")[1]
-        # Cycle through tag_styles_list for multi-color effect
-        tags = "".join(
-            f'<span style="display:inline-block;{tag_styles_list[i % len(tag_styles_list)]}margin:6px;font-size:14px;">{s}</span>'
-            for i, s in enumerate(skill_list)
-        )
-        return f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:24px;">{decor} {label}</h2><div style="display:flex;flex-wrap:wrap;gap:4px;">{tags}</div></section>'
+        # Progress bar visualization with multi-color cycling
+        bars = ""
+        total = len(skill_list)
+        for i, s in enumerate(skill_list):
+            # Width: varies for visual interest (70-98%)
+            width = 70 + ((i * 7) % 29)
+            # Cycle through tag colors for bar color
+            bar_color = pc
+            if has_gradient and len(gradient_colors_list) > 1:
+                bar_color = gradient_colors_list[i % len(gradient_colors_list)]
+            elif has_splice and len(splice_colors_list) > 1:
+                bar_color = splice_colors_list[i % len(splice_colors_list)]
+            bars += f'''
+            <div style="margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:13px;color:#444;font-weight:500;">{s}</span>
+                </div>
+                <div style="height:10px;background:rgba(0,0,0,0.06);border-radius:{br};overflow:hidden;">
+                    <div style="height:100%;width:{width}%;background:{bar_color};border-radius:{br};"></div>
+                </div>
+            </div>'''
+        return f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:24px;">{decor} {label}</h2>{bars}</section>'
 
     def _build_hobbies(lang_code):
         if lang_code == "en":
@@ -445,9 +565,11 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             return ""
         label = t("hobbies")[0] if lang_code == "en" else t("hobbies")[1]
         # Cycle through colors for multi-color hobbies
+        # Use solid colors for hobbies, fall back to primary
+        hobby_color_list = effect_colors_raw.get('solid', [pc]) or [pc]
         hobby_styles = []
         for i, _ in enumerate(hobby_list):
-            c = all_colors[i % len(all_colors)]
+            c = hobby_color_list[i % len(hobby_color_list)]
             hobby_styles.append(f"background:white;border:2px solid {c};color:{c};border-radius:50px;padding:10px 24px;")
         tags = "".join(
             f'<span style="display:inline-block;{hobby_styles[i]}margin:6px;">{h}</span>'
