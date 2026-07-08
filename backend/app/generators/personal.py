@@ -108,6 +108,7 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
         color_effects = [ce]
     splice_direction = getattr(style, 'splice_direction', 'horizontal') or 'horizontal'
     splice_repeat = getattr(style, 'splice_repeat', False)
+    timeline_style = getattr(style, 'timeline_style', 'alternate')
 
     # NEW: Per-effect color arrays (effect_colors)
     effect_colors = getattr(style, 'effect_colors', {}) or {}
@@ -324,6 +325,7 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
     result["accent_pattern"] = accent_pattern
     result["accent_layout"] = accent_layout
     result["shadow_colors"] = shadow_colors
+    result["timeline_style"] = timeline_style
     return result
 
 
@@ -367,6 +369,7 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
     accent = cfg.get("accent_color", pc)
     dot_pattern = cfg.get("dot_pattern_css", "")
     corner_color = cfg.get("corner_color", pc)
+    timeline_style = cfg.get("timeline_style", "alternate")
     splice_css = cfg.get("splice_css", pc)
     splice_v_css = cfg.get("splice_v_css", pc)
 
@@ -457,7 +460,7 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             dur = exp.duration if lang_code == "en" else (exp.duration_cn or exp.duration)
             desc = exp.description if lang_code == "en" else (exp.description_cn or exp.description)
             # Alternating timeline for 2+ items
-            if total >= 2:
+            if total >= 2 and timeline_style == 'alternate':
                 is_right = idx % 2 == 0
                 dot_color = tag_styles_list[idx % len(tag_styles_list)].split(';')[0].replace('background:', '') if tag_styles_list else pc
                 if is_right:

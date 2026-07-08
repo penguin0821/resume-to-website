@@ -167,6 +167,12 @@ export const translations = {
     layoutSidebar: "Sidebar",
     layoutSidebarDesc: "Left sidebar + right content",
     sidebarHint: "Sidebar layout places your avatar, contact info and skills on the left, with work experience and education on the right.",
+    timelineStyle: "Timeline Style",
+    timelineStyleHint: "Choose how work experience is displayed",
+    timelineAlternate: "Alternating",
+    timelineAlternateDesc: "Left-right zigzag",
+    timelineLinear: "Linear",
+    timelineLinearDesc: "Top to bottom",
 
     // Bilingual toggle in form
     bilingualTitle: "Bilingual Support (EN / CN)",
@@ -421,6 +427,12 @@ export const translations = {
     layoutSidebar: "\u4fa7\u680f",
     layoutSidebarDesc: "\u5de6\u4fa7\u680f + \u53f3\u4fa7\u5185\u5bb9",
     sidebarHint: "\u4fa7\u680f\u5e03\u5c40\u5c06\u5934\u50cf\u3001\u8054\u7cfb\u65b9\u5f0f\u548c\u6280\u80fd\u653e\u5728\u5de6\u4fa7\uff0c\u5de5\u4f5c\u7ecf\u5386\u548c\u6559\u80b2\u7ecf\u5386\u5728\u53f3\u4fa7\u5c55\u793a\u3002",
+    timelineStyle: "\u65f6\u95f4\u7ebf\u98ce\u683c",
+    timelineStyleHint: "\u9009\u62e9\u5de5\u4f5c\u7ecf\u5386\u7684\u5c55\u793a\u65b9\u5f0f",
+    timelineAlternate: "\u4ea4\u66ff",
+    timelineAlternateDesc: "\u5de6\u53f3\u4ea4\u9519\u5c55\u793a",
+    timelineLinear: "\u7ebf\u6027",
+    timelineLinearDesc: "\u4ece\u4e0a\u5230\u4e0b\u987a\u5e8f\u5c55\u793a",
 
     // Bilingual toggle
     bilingualTitle: "\u4e2d\u82f1\u53cc\u8bed\u652f\u6301",

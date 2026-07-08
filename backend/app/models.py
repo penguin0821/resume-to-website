@@ -56,6 +56,7 @@ class PersonalStyle(BaseModel):
     accent_layout: str = "even"  # even / random
     ui_style: str = "cartoon"  # cartoon / minimal / artistic / retro
     bg_image: str = ""  # base64 data URL or image URL
+    timeline_style: str = "alternate"  # alternate / linear
 
 
 class ProfessionalStyle(BaseModel):
@@ -67,6 +68,7 @@ class ProfessionalStyle(BaseModel):
     content_layout: str = "classic"  # classic / poster / sidebar
     photo_layout: str = ""  # legacy alias for content_layout (backward compat)
     header_image: str = ""  # base64 or URL for poster banner background
+    timeline_style: str = "alternate"  # alternate / linear
 
 
 class GenerateRequest(BaseModel):

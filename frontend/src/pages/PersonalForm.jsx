@@ -24,6 +24,7 @@ function PersonalForm() {
     keywords: [],
     ui_style: 'cartoon',
     bg_image: '',
+    timeline_style: 'alternate',
   })
   const [keywordInput, setKeywordInput] = useState('')
 
@@ -518,6 +519,57 @@ function PersonalForm() {
                 )}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Timeline Style */}
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.timelineStyle || 'Timeline Style'}</label>
+          <p className="text-[10px] text-gray-400 italic mb-3">{t.timelineStyleHint || 'Choose how work experience is displayed'}</p>
+          <div className="flex gap-4">
+            <button type="button"
+              onClick={() => setStyle(prev => ({ ...prev, timeline_style: 'alternate' }))}
+              className={`flex-1 p-3 rounded-2xl border-2 text-center transition-all ${
+                style.timeline_style === 'alternate'
+                  ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
+                  : 'border-gray-200 bg-white hover:border-gray-400'
+              }`}>
+              <div className="h-10 mb-2 flex items-center justify-center gap-1">
+                <div className="w-5 h-1.5 bg-gray-300 rounded" />
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                <div className="w-5" />
+              </div>
+              <div className="h-4 mb-2 flex items-center justify-center gap-1">
+                <div className="w-5" />
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                <div className="w-5 h-1.5 bg-gray-300 rounded" />
+              </div>
+              <div className="text-xs font-semibold text-gray-800">{t.timelineAlternate || 'Alternating'}</div>
+              <div className="text-[10px] text-gray-400 mt-1">{t.timelineAlternateDesc || 'Left-right zigzag'}</div>
+              {style.timeline_style === 'alternate' && (
+                <div className="mt-1 text-[10px] font-medium text-gray-600">{'\u2713'}</div>
+              )}
+            </button>
+            <button type="button"
+              onClick={() => setStyle(prev => ({ ...prev, timeline_style: 'linear' }))}
+              className={`flex-1 p-3 rounded-2xl border-2 text-center transition-all ${
+                style.timeline_style === 'linear'
+                  ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
+                  : 'border-gray-200 bg-white hover:border-gray-400'
+              }`}>
+              <div className="h-10 mb-2 flex items-center justify-center gap-1">
+                <div className="w-1 h-8 bg-gray-300 rounded" />
+                <div className="flex flex-col gap-1 items-start">
+                  <div className="w-8 h-1.5 bg-gray-300 rounded" />
+                  <div className="w-6 h-1 bg-gray-200 rounded" />
+                </div>
+              </div>
+              <div className="text-xs font-semibold text-gray-800">{t.timelineLinear || 'Linear'}</div>
+              <div className="text-[10px] text-gray-400 mt-1">{t.timelineLinearDesc || 'Top to bottom'}</div>
+              {style.timeline_style === 'linear' && (
+                <div className="mt-1 text-[10px] font-medium text-gray-600">{'\u2713'}</div>
+              )}
+            </button>
           </div>
         </div>
       </div>

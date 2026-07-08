@@ -87,6 +87,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
     if photo_layout and content_layout == 'classic':
         content_layout = 'poster' if photo_layout == 'poster' else 'classic'
     header_image = getattr(style, 'header_image', '') if style else ''
+    timeline_style = getattr(style, 'timeline_style', 'alternate') if style else 'alternate'
 
     name_en = resume.name
     name_cn = resume.name_cn or resume.name
@@ -120,7 +121,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
             desc = exp.description if lang_code == "en" else (exp.description_cn or exp.description)
             # Alternating timeline: even items left, odd items right
             is_right = idx % 2 == 0
-            if compact or len(resume.work_experiences) < 2:
+            if compact or len(resume.work_experiences) < 2 or timeline_style != 'alternate':
                 # Single column timeline (for sidebar or few items)
                 items += f'''
             <div style="position:relative;padding-left:32px;margin-bottom:28px;border-left:2px solid {accent};">
