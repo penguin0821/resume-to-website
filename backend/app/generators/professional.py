@@ -418,6 +418,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
 </head>
 <body>
     {body}
+    <div id="ai-effect-container" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:900;overflow:hidden;"></div>
     <script>{ai_js}</script>
 </body>
 </html>'''
