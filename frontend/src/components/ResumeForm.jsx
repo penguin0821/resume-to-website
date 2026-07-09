@@ -3,7 +3,7 @@ import { useLang } from '../LanguageContext'
 import SectionOrder from './SectionOrder'
 import AIChatPanel from './AIChatPanel'
 
-function ResumeForm({ mode, onSubmit, extraFields }) {
+function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFromAI }) {
   const { t, lang } = useLang()
   const [showBilingual, setShowBilingual] = useState(false)
   const [resume, setResume] = useState({
