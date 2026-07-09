@@ -197,6 +197,7 @@ export const translations = {
     aiSuggest2: "Harry Potter theme",
     aiSuggest3: "Minimalist clean",
     aiSuggest4: "Add falling particles",
+    aiSuggestHint: "Feel free to type your own idea above — these are just some examples:",
 
     // Bilingual toggle in form
     bilingualTitle: "Bilingual Support (EN / CN)",
@@ -481,6 +482,7 @@ export const translations = {
     aiSuggest2: "\u54c8\u5229\u6ce2\u7279\u4e3b\u9898",
     aiSuggest3: "\u6781\u7b80\u5e72\u51c0",
     aiSuggest4: "\u6dfb\u52a0\u98d8\u843d\u7c92\u5b50\u7279\u6548",
+    aiSuggestHint: "\u4f60\u53ef\u4ee5\u5728\u4e0a\u65b9\u81ea\u7531\u8f93\u5165\u4efb\u4f55\u60f3\u6cd5\uff0c\u4ee5\u4e0b\u53ea\u662f\u4e00\u4e9b\u53c2\u8003\u4f8b\u5b50\uff1a",
 
     // Bilingual toggle
     bilingualTitle: "\u4e2d\u82f1\u53cc\u8bed\u652f\u6301",

@@ -152,7 +152,9 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
 
       {/* Quick suggestions */}
       {messages.length === 0 && apiKey && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3">
+          <p className="text-[10px] text-gray-400 mb-2">{t.aiSuggestHint || 'You can type anything above — here are some ideas to get started:'}</p>
+          <div className="flex flex-wrap gap-2">
           {[
             t.aiSuggest1 || 'Cyberpunk neon style',
             t.aiSuggest2 || 'Harry Potter theme',
@@ -164,6 +166,7 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
               {s}
             </button>
           ))}
+          </div>
         </div>
       )}
     </section>
