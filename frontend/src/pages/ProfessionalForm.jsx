@@ -305,16 +305,21 @@ function ProfessionalForm() {
     </section>
   )
 
-  const handleSubmit = async (resumeData, aiEffects) => {
+  const handleAIStyleUpdate = (updates) => {
+    setProStyle(prev => ({ ...prev, ...updates }))
+  }
+
+  const handleSubmit = async (resumeData, aiEffects, sectionOrder) => {
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         mode: 'professional',
         resume: resumeData,
-        pro_style: proStyle,
+        pro_style: { ...proStyle, section_order: sectionOrder || [] },
         lang,
         ai_effects: aiEffects || [],
+        section_order: sectionOrder || [],
       }),
     })
     if (!response.ok) throw new Error('Generation failed')
@@ -333,7 +338,7 @@ function ProfessionalForm() {
           </div>
           <p className="text-gray-500 ml-[52px]">{t.professionalFormDesc}</p>
         </div>
-        <ResumeForm mode="professional" onSubmit={handleSubmit} extraFields={extraFields} />
+        <ResumeForm mode="professional" onSubmit={handleSubmit} extraFields={extraFields} currentStyle={proStyle} onStyleUpdateFromAI={handleAIStyleUpdate} />
       </main>
     </div>
   )

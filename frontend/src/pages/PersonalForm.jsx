@@ -576,15 +576,18 @@ function PersonalForm() {
     </section>
   )
 
-  const handleSubmit = async (resumeData, aiEffects) => {
+  const handleAIStyleUpdate = (updates) => {
+    setStyle(prev => ({ ...prev, ...updates }))
+  }
+
+  const handleSubmit = async (resumeData, aiEffects, sectionOrder) => {
     const ec = style.effect_colors
     const stylePayload = {
       ...style,
-      // Derive primary_color from effect_colors for backward compat
       primary_color: ec.solid[0] || ec.gradient[0] || ec.splice[0] || '#6366f1',
-      // Legacy fields for backward compat
       primary_colors: ec.solid || [],
       extra_colors: ec.accent || ec.shadow || [],
+      section_order: sectionOrder || [],
     }
     const response = await fetch('/api/generate', {
       method: 'POST',
@@ -595,6 +598,7 @@ function PersonalForm() {
         style: stylePayload,
         lang,
         ai_effects: aiEffects || [],
+        section_order: sectionOrder || [],
       }),
     })
     if (!response.ok) throw new Error('Generation failed')
@@ -613,7 +617,7 @@ function PersonalForm() {
           </div>
           <p className="text-gray-500 ml-[52px]">{t.personalFormDesc}</p>
         </div>
-        <ResumeForm mode="personal" onSubmit={handleSubmit} extraFields={extraFields} />
+        <ResumeForm mode="personal" onSubmit={handleSubmit} extraFields={extraFields} currentStyle={style} onStyleUpdateFromAI={handleAIStyleUpdate} />
       </main>
     </div>
   )

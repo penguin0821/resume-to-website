@@ -174,6 +174,30 @@ export const translations = {
     timelineLinear: "Linear",
     timelineLinearDesc: "Top to bottom",
 
+    // Section Order
+    sectionOrder: "Section Order",
+    sectionOrderHint: "Drag sections to reorder how they appear on your website",
+    sectionBio: "About Me",
+    sectionEducation: "Education",
+    sectionWork: "Work Experience",
+    sectionSkills: "Skills",
+    sectionHobbies: "Hobbies",
+
+    // School Logo
+    schoolLogo: "School Logo",
+    schoolLogoHint: "(Optional)",
+
+    // AI Chat
+    aiAssistant: "AI Design Assistant",
+    aiAssistantDesc: "Describe the style you want in natural language, AI will adjust your design",
+    aiChatPh: 'e.g. "I want a Harry Potter themed page..."',
+    aiSend: "Send",
+    aiThinking: "...",
+    aiSuggest1: "Cyberpunk neon style",
+    aiSuggest2: "Harry Potter theme",
+    aiSuggest3: "Minimalist clean",
+    aiSuggest4: "Add falling particles",
+
     // Bilingual toggle in form
     bilingualTitle: "Bilingual Support (EN / CN)",
     bilingualDesc: "Enable to add Chinese translations for a bilingual website",
@@ -433,6 +457,30 @@ export const translations = {
     timelineAlternateDesc: "\u5de6\u53f3\u4ea4\u9519\u5c55\u793a",
     timelineLinear: "\u7ebf\u6027",
     timelineLinearDesc: "\u4ece\u4e0a\u5230\u4e0b\u987a\u5e8f\u5c55\u793a",
+
+    // Section Order
+    sectionOrder: "\u677f\u5757\u6392\u5e8f",
+    sectionOrderHint: "\u62d6\u62fd\u8c03\u6574\u5404\u677f\u5757\u5728\u7f51\u9875\u4e2d\u7684\u663e\u793a\u987a\u5e8f",
+    sectionBio: "\u7b80\u4ecb",
+    sectionEducation: "\u6559\u80b2\u80cc\u666f",
+    sectionWork: "\u5de5\u4f5c\u7ecf\u5386",
+    sectionSkills: "\u6280\u80fd",
+    sectionHobbies: "\u5174\u8da3\u7231\u597d",
+
+    // School Logo
+    schoolLogo: "\u6821\u5fbd/Logo",
+    schoolLogoHint: "\uff08\u53ef\u9009\uff09",
+
+    // AI Chat
+    aiAssistant: "AI \u8bbe\u8ba1\u52a9\u624b",
+    aiAssistantDesc: "\u7528\u81ea\u7136\u8bed\u8a00\u63cf\u8ff0\u4f60\u60f3\u8981\u7684\u98ce\u683c\uff0cAI \u5c06\u81ea\u52a8\u8c03\u6574\u8bbe\u8ba1",
+    aiChatPh: '\u4f8b\u5982\uff1a"\u6211\u60f3\u8981\u54c8\u5229\u6ce2\u7279\u98ce\u683c\u7684\u9875\u9762..."',
+    aiSend: "\u53d1\u9001",
+    aiThinking: "...",
+    aiSuggest1: "\u8d5b\u535a\u670b\u514b\u9713\u8679\u98ce",
+    aiSuggest2: "\u54c8\u5229\u6ce2\u7279\u4e3b\u9898",
+    aiSuggest3: "\u6781\u7b80\u5e72\u51c0",
+    aiSuggest4: "\u6dfb\u52a0\u98d8\u843d\u7c92\u5b50\u7279\u6548",
 
     // Bilingual toggle
     bilingualTitle: "\u4e2d\u82f1\u53cc\u8bed\u652f\u6301",

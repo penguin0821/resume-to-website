@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useLang } from '../LanguageContext'
+import SectionOrder from './SectionOrder'
+import AIChatPanel from './AIChatPanel'
 
 function ResumeForm({ mode, onSubmit, extraFields }) {
   const { t, lang } = useLang()
@@ -7,7 +9,7 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
   const [resume, setResume] = useState({
     name: '', title: '', email: '', phone: '', bio: '', avatar_url: '',
     work_experiences: [{ company: '', position: '', duration: '', description: '', company_cn: '', position_cn: '', duration_cn: '', description_cn: '' }],
-    educations: [{ school: '', major: '', duration: '', school_cn: '', major_cn: '', duration_cn: '' }],
+    educations: [{ school: '', major: '', duration: '', school_cn: '', major_cn: '', duration_cn: '', school_logo: '' }],
     skills: [], hobbies: [],
     name_cn: '', title_cn: '', bio_cn: '', skills_cn: [], hobbies_cn: [],
   })
@@ -20,10 +22,7 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
 
   // AI Effects state
   const [aiEffects, setAiEffects] = useState([])
-  const [aiDesc, setAiDesc] = useState('')
-  const [aiApiKey, setAiApiKey] = useState('')
-  const [aiGenerating, setAiGenerating] = useState(false)
-  const [showApiKeyGuide, setShowApiKeyGuide] = useState(false)
+  const [sectionOrder, setSectionOrder] = useState([])
 
   const updateField = (field, value) => setResume(prev => ({ ...prev, [field]: value }))
 
@@ -40,7 +39,7 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
     updated[index] = { ...updated[index], [field]: value }
     setResume(prev => ({ ...prev, educations: updated }))
   }
-  const addEdu = () => setResume(prev => ({ ...prev, educations: [...prev.educations, { school: '', major: '', duration: '', school_cn: '', major_cn: '', duration_cn: '' }] }))
+  const addEdu = () => setResume(prev => ({ ...prev, educations: [...prev.educations, { school: '', major: '', duration: '', school_cn: '', major_cn: '', duration_cn: '', school_logo: '' }] }))
   const removeEdu = (index) => setResume(prev => ({ ...prev, educations: prev.educations.filter((_, i) => i !== index) }))
 
   const addSkill = () => { if (skillInput.trim()) { setResume(prev => ({ ...prev, skills: [...prev.skills, skillInput.trim()] })); setSkillInput('') } }
@@ -53,27 +52,12 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
   const removeHobby = (index) => setResume(prev => ({ ...prev, hobbies: prev.hobbies.filter((_, i) => i !== index) }))
   const removeHobbyCn = (index) => setResume(prev => ({ ...prev, hobbies_cn: prev.hobbies_cn.filter((_, i) => i !== index) }))
 
-  const generateAIEffect = async () => {
-    if (!aiDesc.trim()) return
-    setAiGenerating(true)
-    try {
-      const resp = await fetch('/api/ai-effects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: aiDesc, api_key: aiApiKey }),
-      })
-      const data = await resp.json()
-      if (resp.ok) {
-        setAiEffects(prev => [...prev, { ...data, id: Date.now() }])
-        setAiDesc('')
-      } else {
-        alert(data.detail || 'AI generation failed')
-      }
-    } catch (err) {
-      alert('Failed to connect to AI service')
-    } finally {
-      setAiGenerating(false)
-    }
+  const handleAIStyleUpdate = (updates) => {
+    onStyleUpdateFromAI?.(updates)
+  }
+
+  const handleAIEffectAdd = (effect) => {
+    setAiEffects(prev => [...prev, effect])
   }
 
   const handleSubmit = async (e) => {
@@ -81,7 +65,7 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
     setLoading(true)
     setSubmitError('')
     try {
-      await onSubmit(resume, aiEffects)
+      await onSubmit(resume, aiEffects, sectionOrder)
     } catch (err) {
       setSubmitError(err.message || 'Generation failed. Please try again.')
     } finally {
@@ -192,6 +176,9 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
 
       {extraFields}
 
+      {/* Section Order */}
+      <SectionOrder value={sectionOrder} onChange={setSectionOrder} />
+
       {/* Work Experience */}
       <section>
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
@@ -279,6 +266,27 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
                 <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.duration}</label>
                 <input type="text" placeholder={t.eduDurationPh} value={edu.duration} onChange={e => updateEdu(i, 'duration', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
               </div>
+            </div>
+            {/* School Logo Upload */}
+            <div className="mt-3 flex items-center gap-3">
+              {edu.school_logo && (
+                <img src={edu.school_logo} alt="school logo" className="w-10 h-10 object-contain rounded-lg border border-gray-200" />
+              )}
+              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors text-xs font-medium">
+                {'\u{1F393}'} {t.schoolLogo || 'School Logo'}
+                <input type="file" accept="image/*" className="hidden" onChange={e => {
+                  const file = e.target.files[0]
+                  if (file) {
+                    const reader = new FileReader()
+                    reader.onload = ev => updateEdu(i, 'school_logo', ev.target.result)
+                    reader.readAsDataURL(file)
+                  }
+                }} />
+              </label>
+              {edu.school_logo && (
+                <button type="button" onClick={() => updateEdu(i, 'school_logo', '')} className="text-red-400 hover:text-red-600 text-xs">{t.clearImage || 'Clear'}</button>
+              )}
+              <span className="text-[10px] text-gray-400">{t.schoolLogoHint || '(Optional)'}</span>
             </div>
             {showBilingual && (
             <div className="mt-5 pt-4 border-t border-amber-200">
@@ -382,90 +390,26 @@ function ResumeForm({ mode, onSubmit, extraFields }) {
         )}
       </section>
 
-      {/* AI Custom Effects - Optional */}
-      <section>
-        <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
-          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-purple-500 to-pink-500 inline-block" />
-          {'\u2728'} {t.aiEffects} <span className="text-sm font-normal text-gray-400">{t.aiOptional}</span>
-        </h2>
-        <p className="text-xs text-gray-500 mb-4">{t.aiEffectsDesc}</p>
+      {/* AI Design Assistant */}
+      <AIChatPanel
+        mode={mode}
+        currentStyle={currentStyle}
+        onStyleUpdate={handleAIStyleUpdate}
+        onEffectAdd={handleAIEffectAdd}
+      />
 
-        {/* API Key section */}
-        <div className="mb-5">
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            Gemini API Key
-          </label>
-          <input type="password" value={aiApiKey} onChange={e => setAiApiKey(e.target.value)}
-            placeholder={t.apiKeyPh}
-            className={`w-full px-4 py-2.5 border rounded-lg text-sm outline-none focus:ring-2 ${
-              aiApiKey
-                ? 'border-green-400 focus:ring-green-300 bg-green-50'
-                : 'border-purple-300 focus:ring-purple-300'
-            }`} />
-          {aiApiKey ? (
-            <p className="text-xs text-green-600 mt-1">{'\u2713'} API Key set</p>
-          ) : (
-            <p className="text-xs text-gray-400 mt-1">{t.apiKeyRequired}</p>
-          )}
-
-          {/* Toggle guide */}
-          <button type="button" onClick={() => setShowApiKeyGuide(!showApiKeyGuide)}
-            className="mt-2 text-xs font-medium text-purple-600 hover:text-purple-800 underline">
-            {showApiKeyGuide ? '\u25B2' : '\u25BC'} {t.apiKeyGuideTitle}
-          </button>
-
-          {/* Guide panel */}
-          {showApiKeyGuide && (
-            <div className="mt-2 p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
-              <p className="text-sm font-semibold text-purple-800">{t.apiKeyGuideTitle}</p>
-              <ol className="text-sm text-purple-700 space-y-1.5">
-                <li>{t.apiKeyStep1}
-                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer"
-                    className="font-semibold text-purple-800 underline hover:text-purple-900">{t.apiKeyStep1Link}</a>
-                </li>
-                <li>{t.apiKeyStep2}</li>
-                <li>{t.apiKeyStep3}</li>
-                <li>{t.apiKeyStep4}</li>
-              </ol>
-              <p className="text-xs text-purple-500 mt-2 pt-2 border-t border-purple-200">{'\u2139\uFE0F'} {t.apiKeyFreeNote}</p>
+      {/* Active effects list */}
+      {aiEffects.length > 0 && (
+        <div className="space-y-2">
+          {aiEffects.map((effect, i) => (
+            <div key={effect.id || i} className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
+              <span className="text-sm text-purple-700">{'\u2728'} {effect.description}</span>
+              <button type="button" onClick={() => setAiEffects(prev => prev.filter((_, idx) => idx !== i))}
+                className="text-red-400 hover:text-red-600 text-xs ml-2">{t.removeEffect || 'Remove'}</button>
             </div>
-          )}
+          ))}
         </div>
-
-        {/* Effects list */}
-        {aiEffects.length > 0 && (
-          <div className="space-y-2 mb-4">
-            {aiEffects.map((effect, i) => (
-              <div key={effect.id || i} className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
-                <span className="text-sm text-purple-700">{'\u2728'} {effect.description}</span>
-                <button type="button" onClick={() => setAiEffects(prev => prev.filter((_, idx) => idx !== i))}
-                  className="text-red-400 hover:text-red-600 text-xs ml-2">{t.removeEffect}</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Generate effect input */}
-        <div className="flex gap-2">
-          <input type="text" value={aiDesc} onChange={e => setAiDesc(e.target.value)}
-            placeholder={t.aiEffectsPh}
-            disabled={!aiApiKey}
-            className={`flex-1 px-4 py-2.5 border rounded-lg outline-none focus:ring-2 ${
-              aiApiKey
-                ? 'border-purple-300 focus:ring-purple-500'
-                : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-            }`} />
-          <button type="button" onClick={generateAIEffect}
-            disabled={aiGenerating || !aiDesc.trim() || !aiApiKey}
-            className={`px-5 py-2.5 rounded-lg text-sm font-medium text-white flex-shrink-0 ${
-              aiGenerating || !aiDesc.trim() || !aiApiKey
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-purple-600 hover:bg-purple-700'
-            }`}>
-            {aiGenerating ? t.generatingEffect : t.generateEffect}
-          </button>
-        </div>
-      </section>
+      )}
 
       {/* Error message */}
       {submitError && (

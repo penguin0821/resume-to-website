@@ -88,6 +88,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
         content_layout = 'poster' if photo_layout == 'poster' else 'classic'
     header_image = getattr(style, 'header_image', '') if style else ''
     timeline_style = getattr(style, 'timeline_style', 'alternate') if style else 'alternate'
+    section_order = getattr(style, 'section_order', []) if style else []
 
     name_en = resume.name
     name_cn = resume.name_cn or resume.name
@@ -174,11 +175,15 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
             school = edu.school if lang_code == "en" else (edu.school_cn or edu.school)
             major = edu.major if lang_code == "en" else (edu.major_cn or edu.major)
             dur = edu.duration if lang_code == "en" else (edu.duration_cn or edu.duration)
+            logo_html = f'<img src="{edu.school_logo}" alt="logo" style="width:36px;height:36px;object-fit:contain;border-radius:6px;margin-right:12px;flex-shrink:0;" />' if edu.school_logo else ''
             items += f'''
-            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:{12 if compact else 16}px 0;border-bottom:1px solid #f0f0f0;">
-                <div>
-                    <h3 style="margin:0;font-size:{14 if compact else 16}px;color:#1a1a2e;font-weight:600;">{school}</h3>
-                    <p style="margin:4px 0 0 0;color:#666;font-size:13px;">{major}</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:{12 if compact else 16}px 0;border-bottom:1px solid #f0f0f0;">
+                <div style="display:flex;align-items:center;">
+                    {logo_html}
+                    <div>
+                        <h3 style="margin:0;font-size:{14 if compact else 16}px;color:#1a1a2e;font-weight:600;">{school}</h3>
+                        <p style="margin:4px 0 0 0;color:#666;font-size:13px;">{major}</p>
+                    </div>
                 </div>
                 <span style="color:#999;font-size:12px;white-space:nowrap;">{dur}</span>
             </div>'''
@@ -237,6 +242,29 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
 
         bio_html = f'<section style="margin-bottom:56px;"><h2 style="font-size:14px;letter-spacing:3px;color:{section_color};margin-bottom:16px;font-weight:600;">{profile_label}</h2><p style="font-size:15px;color:#555;line-height:1.9;padding:20px 0;border-bottom:1px solid #f0f0f0;">{bio}</p></section>' if bio else ''
 
+        # Section order helper
+        default_order = ["bio", "education", "work", "skills", "hobbies"]
+        order = section_order if section_order else default_order
+        section_map = {
+            "bio": bio_html,
+            "education": _build_edu,
+            "work": _build_work,
+            "skills": _build_skills,
+            "hobbies": _build_hobbies,
+        }
+        def _ordered_sections(lang_code, exclude=None):
+            exclude = exclude or []
+            html = ""
+            for key in order:
+                if key in exclude:
+                    continue
+                val = section_map.get(key, "")
+                if callable(val):
+                    html += val(lang_code)
+                elif isinstance(val, str):
+                    html += val
+            return html
+
         # === SIDEBAR LAYOUT ===
         if content_layout == 'sidebar':
             sidebar_avatar = _avatar(name, size=100)
@@ -263,9 +291,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
 
             main_html = f'''
             <div style="flex:1;padding:48px 40px;max-width:calc(100% - 280px);">
-                {bio_html}
-                {_build_work(lang_code, compact=False)}
-                {_build_edu(lang_code, compact=False)}
+                {_ordered_sections(lang_code, exclude=["skills", "hobbies"])}
             </div>'''
 
             return f'''
@@ -326,11 +352,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
         {header_html}
         <div style="height:4px;background:{bar_style};"></div>
         <main style="max-width:720px;margin:0 auto;padding:56px 20px;">
-            {bio_html}
-            {_build_edu(lang_code)}
-            {_build_work(lang_code)}
-            {_build_skills(lang_code)}
-            {_build_hobbies(lang_code)}
+            {_ordered_sections(lang_code)}
         </main>
         <footer style="text-align:center;padding:40px 20px;background:{footer_bg};color:#666;font-size:12px;letter-spacing:1px;">
             <p style="color:{accent};margin-bottom:4px;">{name}</p>
@@ -353,11 +375,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
         {header_html}
         <div style="height:4px;background:{bar_style};"></div>
         <main style="max-width:720px;margin:0 auto;padding:56px 20px;">
-            {bio_html}
-            {_build_edu(lang_code)}
-            {_build_work(lang_code)}
-            {_build_skills(lang_code)}
-            {_build_hobbies(lang_code)}
+            {_ordered_sections(lang_code)}
         </main>
         <footer style="text-align:center;padding:40px 20px;background:{footer_bg};color:#666;font-size:12px;letter-spacing:1px;">
             <p style="color:{accent};margin-bottom:4px;">{name}</p>

@@ -326,6 +326,7 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
     result["accent_layout"] = accent_layout
     result["shadow_colors"] = shadow_colors
     result["timeline_style"] = timeline_style
+    result["section_order"] = getattr(style, 'section_order', []) if style else []
     return result
 
 
@@ -372,6 +373,7 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
     timeline_style = cfg.get("timeline_style", "alternate")
     splice_css = cfg.get("splice_css", pc)
     splice_v_css = cfg.get("splice_v_css", pc)
+    section_order = cfg.get("section_order", [])
 
     # --- Apply multiple color effects (layered) ---
     extra_body_css = ""
@@ -518,8 +520,10 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             school = edu.school if lang_code == "en" else (edu.school_cn or edu.school)
             major = edu.major if lang_code == "en" else (edu.major_cn or edu.major)
             dur = edu.duration if lang_code == "en" else (edu.duration_cn or edu.duration)
+            logo_html = f'<img src="{edu.school_logo}" alt="logo" style="width:40px;height:40px;object-fit:contain;border-radius:8px;margin-bottom:8px;" />' if edu.school_logo else ''
             items += f'''
             <div style="background:{card_bg};padding:24px;border-radius:{br};box-shadow:{cs};border:{card_border};">
+                {logo_html}
                 <h3 style="margin:0 0 4px 0;font-size:18px;color:#1a1a2e;">{school}</h3>
                 <p style="margin:0 0 4px 0;color:{pc};">{major}</p>
                 <p style="margin:0;color:#999;font-size:14px;">{dur}</p>
@@ -599,6 +603,29 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             accent_bar = f'<div style="height:6px;background:{splice_css};"></div>'
         elif has_gradient:
             accent_bar = f'<div style="height:4px;background:{gradient_h_css};"></div>'
+
+        bio_section = f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:16px;">{decor} {about_label}</h2><p style="font-size:16px;color:#555;line-height:1.8;background:{card_bg};padding:24px;border-radius:{br};box-shadow:{cs};border:{card_border};">{bio}</p></section>' if bio else ''
+
+        # Section order helper
+        default_order = ["bio", "education", "work", "skills", "hobbies"]
+        order = section_order if section_order else default_order
+        section_map = {
+            "bio": bio_section,
+            "education": _build_edu,
+            "work": _build_work,
+            "skills": _build_skills,
+            "hobbies": _build_hobbies,
+        }
+        def _ordered_sections(lc):
+            html = ""
+            for key in order:
+                val = section_map.get(key, "")
+                if callable(val):
+                    html += val(lc)
+                elif isinstance(val, str):
+                    html += val
+            return html
+
         return f'''
         {accent_bar}
         <header style="background:{header_bg};padding:60px 20px;text-align:center;color:white;{header_style}">
@@ -611,11 +638,7 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             </div>
         </header>
         <main style="max-width:800px;margin:0 auto;padding:48px 20px;">
-            {f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:16px;">{decor} {about_label}</h2><p style="font-size:16px;color:#555;line-height:1.8;background:{card_bg};padding:24px;border-radius:{br};box-shadow:{cs};border:{card_border};">{bio}</p></section>' if bio else ''}
-            {_build_edu(lang_code)}
-            {_build_work(lang_code)}
-            {_build_skills(lang_code)}
-            {_build_hobbies(lang_code)}
+            {_ordered_sections(lang_code)}
         </main>
         <footer style="text-align:center;padding:32px;background:{f_bg};color:{footer_color};font-size:14px;">
             <p>{footer_label} | {name} &copy; 2026</p>

@@ -191,3 +191,117 @@ def generate_effects(description: str, api_key: Optional[str] = None) -> dict:
         "js": _sanitize_ai_js(raw_js),
         "description": result.get("description", description),
     }
+
+
+# ==============================
+# AI Style Chat Assistant
+# ==============================
+
+STYLE_CHAT_PROMPT = """You are a web design assistant for a resume-to-website tool.
+Your job is to help users customize their personal/professional website through natural conversation.
+
+The user's website has these configurable parameters:
+
+For Personal Style:
+- primary_color: hex color string (main theme color)
+- color_effects: list of effect types from ["solid", "gradient", "shadow", "accent", "splice"]
+- effect_colors: dict like {"solid": ["#xxx"], "gradient": ["#a","#b"], "shadow": ["#c"], "accent": ["#d"], "splice": ["#e","#f"]}
+- ui_style: one of "cartoon", "minimal", "artistic", "retro"
+- timeline_style: "alternate" (left-right zigzag) or "linear" (top-down)
+- section_order: list like ["bio", "education", "work", "skills", "hobbies"]
+- bg_image: background image URL or base64
+- accent_pattern: "dots", "clover", "hollow", "coin", "star", "diamond", "cross", "heart", "wave"
+
+For Professional Style:
+- accent_color: hex color (accent/highlight color, e.g. gold #c9a96e)
+- header_bg: hex color (header background, e.g. dark #1a1a2e)
+- content_layout: "classic" (top-down), "poster" (LinkedIn banner), "sidebar" (left panel)
+- timeline_style: "alternate" or "linear"
+- section_order: list like ["bio", "education", "work", "skills", "hobbies"]
+- ui_style: "elegant", "minimal", "corporate"
+
+Your capabilities:
+1. Suggest style parameter changes based on natural language descriptions
+2. Generate visual effects (CSS/JS) for decorative elements
+3. Reorder sections
+4. Recommend color schemes for themes (e.g. "Harry Potter", "cyberpunk", "minimalist")
+
+You MUST respond in JSON format:
+{
+  "reply": "Your friendly, concise reply in the same language as the user",
+  "style_updates": { ... parameters to change ... },
+  "effect": { "css": "...", "js": "...", "description": "..." } (optional, only if user wants visual effects)
+}
+
+Rules:
+- reply: Always provide a helpful, friendly response explaining what you changed
+- style_updates: Only include parameters that should change. Use valid values from the lists above.
+- effect: Only include if the user specifically requests a visual/decorative effect (particles, animations, etc.)
+- For effect CSS/JS: scope everything under '#ai-effect-container', use pointer-events:none, z-index <= 999
+- Respond in the same language the user used
+- Keep replies concise (2-3 sentences max)
+- When user describes a theme (e.g. "Harry Potter"), suggest appropriate colors + layout + effects
+- For color suggestions, always provide valid hex colors
+
+Current style: {current_style}
+Mode: {mode}"""
+
+
+def generate_style_chat(message: str, api_key: Optional[str] = None, mode: str = "personal",
+                        current_style: dict = None, conversation: list = None) -> dict:
+    """Process a style chat message and return AI suggestions."""
+    import json
+    
+    key = api_key or _api_key
+    if not key:
+        raise ValueError("No Gemini API key provided")
+    
+    if api_key and api_key != _api_key:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+    else:
+        model = _get_model()
+    
+    system = STYLE_CHAT_PROMPT.format(
+        current_style=json.dumps(current_style or {}, ensure_ascii=False),
+        mode=mode
+    )
+    
+    # Build conversation context
+    context_parts = [system]
+    if conversation:
+        for msg in conversation[-6:]:  # last 6 messages for context
+            role = "User" if msg.get("role") == "user" else "Assistant"
+            context_parts.append(f"{role}: {msg.get('content', '')}")
+    context_parts.append(f"User: {message}")
+    
+    prompt = "\n".join(context_parts) + "\n\nRespond ONLY with the JSON object:"
+    
+    response = model.generate_content(prompt)
+    text = response.text.strip()
+    
+    # Remove markdown code blocks
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+    
+    try:
+        result = json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r'\{[\s\S]*\}', text)
+        if match:
+            result = json.loads(match.group())
+        else:
+            return {"reply": text, "style_updates": {}, "effect": {}}
+    
+    # Sanitize effect if present
+    effect = result.get("effect", {})
+    if effect and (effect.get("css") or effect.get("js")):
+        effect["css"] = _sanitize_ai_css(effect.get("css", ""))
+        effect["js"] = _sanitize_ai_js(effect.get("js", ""))
+    
+    return {
+        "reply": result.get("reply", ""),
+        "style_updates": result.get("style_updates", {}),
+        "effect": effect if effect else {},
+    }
