@@ -273,7 +273,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
                 <img src={edu.school_logo} alt="school logo" className="w-10 h-10 object-contain rounded-lg border border-gray-200" />
               )}
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors text-xs font-medium">
-                {'\u{1F393}'} {t.schoolLogo || 'School Logo'}
+                {'\u{1F393}'} {t.schoolLogo || 'School Logo'} {t.upload || '上传'}
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files[0]
                   if (file) {

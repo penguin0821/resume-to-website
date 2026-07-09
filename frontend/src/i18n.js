@@ -185,6 +185,7 @@ export const translations = {
 
     // School Logo
     schoolLogo: "School Logo",
+    upload: "Upload",
     schoolLogoHint: "(Optional)",
 
     // AI Chat
@@ -470,6 +471,7 @@ export const translations = {
 
     // School Logo
     schoolLogo: "\u6821\u5fbd/Logo",
+    upload: "\u4e0a\u4f20",
     schoolLogoHint: "\uff08\u53ef\u9009\uff09",
 
     // AI Chat
