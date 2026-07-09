@@ -17,6 +17,7 @@ function Preview() {
   const [deployUrl, setDeployUrl] = useState('')
   const [deployError, setDeployError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [copiedHtml, setCopiedHtml] = useState(false)
   // GitHub Pages fields
   const [ghToken, setGhToken] = useState('')
   const [repoName, setRepoName] = useState('my-resume-site')
@@ -117,6 +118,10 @@ function Preview() {
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
           <div className="flex gap-3">
             <button onClick={() => navigate(-1)} className="px-5 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 text-sm transition-colors">{t.edit}</button>
+            <button onClick={() => { navigator.clipboard.writeText(html); setCopiedHtml(true); setTimeout(() => setCopiedHtml(false), 2000) }}
+              className="px-5 py-2.5 border border-indigo-200 text-indigo-600 rounded-xl hover:bg-indigo-50 text-sm font-medium transition-colors">
+              {copiedHtml ? (t.copied || 'Copied!') : (t.copyHtml || 'Copy HTML')}
+            </button>
             <button onClick={downloadHtml} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium transition-colors">{t.downloadHtml}</button>
           </div>
         </div>
@@ -132,32 +137,60 @@ function Preview() {
           <p className="text-sm text-gray-500 mb-8">{t.deployDesc}</p>
 
           {/* Tab switcher */}
-          <div className="flex gap-3 mb-8">
+          <div className="flex gap-3 mb-6">
             <button
               onClick={() => { setDeployTab('netlify'); setDeployUrl(''); setDeployError('') }}
-              className={`flex-1 py-4 px-4 rounded-2xl text-sm font-medium transition-all ${
+              className={`relative flex-1 py-4 px-4 rounded-2xl text-sm font-medium transition-all ${
                 deployTab === 'netlify'
                   ? 'bg-indigo-600 text-white ring-2 ring-indigo-300 ring-offset-2'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}>
+              <span className={`absolute -top-2 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                deployTab === 'netlify' ? 'bg-green-400 text-white' : 'bg-green-500 text-white'
+              }`}>{t.free || 'FREE'}</span>
               Netlify
               <span className="block text-xs mt-0.5 opacity-80">{t.deployNetlifyDesc}</span>
             </button>
             <button
               onClick={() => { setDeployTab('github'); setDeployUrl(''); setDeployError('') }}
-              className={`flex-1 py-4 px-4 rounded-2xl text-sm font-medium transition-all ${
+              className={`relative flex-1 py-4 px-4 rounded-2xl text-sm font-medium transition-all ${
                 deployTab === 'github'
                   ? 'bg-gray-900 text-white ring-2 ring-gray-400 ring-offset-2'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}>
+              <span className={`absolute -top-2 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                deployTab === 'github' ? 'bg-green-400 text-white' : 'bg-green-500 text-white'
+              }`}>{t.free || 'FREE'}</span>
               GitHub Pages
               <span className="block text-xs mt-0.5 opacity-80">{t.deployGitHubDesc}</span>
             </button>
           </div>
 
+          {/* Netlify tutorial tip */}
+          {deployTab === 'netlify' && (
+            <div className="mb-5 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+              <p className="text-xs font-semibold text-indigo-700 mb-1">{t.netlifyTipTitle || 'How it works:'}</p>
+              <ol className="text-xs text-indigo-600 space-y-1 list-decimal list-inside">
+                <li>{t.netlifyTip1 || 'Click "Deploy" — your site will be live in seconds'}</li>
+                <li>{t.netlifyTip2 || 'You\'ll get a URL like xxx.netlify.app'}</li>
+                <li>{t.netlifyTip3 || 'To keep it permanently: sign up at netlify.com and "claim" the site (free)'}</li>
+                <li>{t.netlifyTip4 || 'Optional: connect a custom domain like yourname.com'}</li>
+              </ol>
+            </div>
+          )}
+
           {/* GitHub fields */}
           {deployTab === 'github' && (
             <div className="space-y-3 mb-5">
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                <p className="text-xs font-semibold text-gray-700 mb-1">{t.githubTipTitle || 'How it works:'}</p>
+                <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+                  <li>{t.githubTip1 || 'Create a token at github.com/settings/tokens (with "repo" scope)'}</li>
+                  <li>{t.githubTip2 || 'We\'ll create a repo and enable GitHub Pages automatically'}</li>
+                  <li>{t.githubTip3 || 'Your site will be at username.github.io/repo-name'}</li>
+                  <li>{t.githubTip4 || 'Update anytime by re-deploying with the same repo name'}</li>
+                </ol>
+              </div>
               <input
                 type="password"
                 value={ghToken}
@@ -212,6 +245,18 @@ function Preview() {
               </div>
             </div>
           )}
+
+          {/* Other platforms hint */}
+          <div className="mt-6 pt-5 border-t border-gray-100">
+            <p className="text-[11px] text-gray-400 leading-relaxed">
+              {t.otherPlatforms || 'You can also deploy to'}{' '}
+              <a href="https://vercel.com" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">Vercel</a> ·{' '}
+              <a href="https://pages.cloudflare.com" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">Cloudflare Pages</a> ·{' '}
+              <a href="https://surge.sh" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">Surge.sh</a> ·{' '}
+              <a href="https://tiiny.host" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">Tiiny.host</a>
+              {' '}— {t.otherPlatformsNote || 'all free. Just download the HTML and upload.'}
+            </p>
+          </div>
         </div>
       </main>
     </div>
