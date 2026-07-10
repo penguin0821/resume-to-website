@@ -92,16 +92,18 @@ function Home() {
       </div>
 
       {/* Cyber Energy Core v3 — WebGL Orb + MagicRings with morph burst */}
-      <div
+      <motion.div
         className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] z-[15]"
-        style={{
-          transform: bursting ? 'scale(1.25)' : 'scale(1)',
-          filter: bursting ? 'brightness(2) saturate(1.8)' : 'brightness(1) saturate(1)',
-          transition: bursting
-            ? 'transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1.2), filter 0.35s ease-out'
-            : 'transform 1.4s cubic-bezier(0.4, 0, 0.2, 1), filter 1.4s ease-in-out',
+        animate={{
+          scale: bursting ? 1.13 : 1,
         }}
+        transition={bursting
+          ? { type: 'spring', stiffness: 280, damping: 12, mass: 0.8 }
+          : { type: 'spring', stiffness: 60, damping: 18, mass: 1.2 }
+        }
       >
+        {/* Morph brightness/saturation layer */}
+        <div className={`w-full h-full ${bursting ? 'animate-[morphFilter_1.6s_ease-out]' : ''}`}>
         {/* MagicRings - expanding concentric rings */}
         <div className="absolute inset-0 pointer-events-none">
           <MagicRings
@@ -133,14 +135,19 @@ function Home() {
             className="w-[160px] h-[160px]"
           />
         </div>
-        {/* Glow aura during burst */}
-        <div
-          className="absolute inset-[-30px] rounded-full pointer-events-none"
+        </div>
+        {/* Soft glow halo during burst — blurred edges for organic feel */}
+        <motion.div
+          className="absolute inset-[-40px] rounded-full pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, rgba(168,85,247,0.4) 0%, rgba(236,72,153,0.2) 40%, transparent 70%)',
-            opacity: bursting ? 1 : 0,
-            transition: bursting ? 'opacity 0.3s ease-out' : 'opacity 1.4s ease-in-out',
+            background: 'radial-gradient(circle, rgba(168,85,247,0.35) 0%, rgba(236,72,153,0.15) 35%, rgba(99,102,241,0.05) 60%, transparent 80%)',
+            filter: 'blur(20px)',
           }}
+          animate={{ opacity: bursting ? 0.85 : 0, scale: bursting ? 1.15 : 0.7 }}
+          transition={bursting
+            ? { opacity: { duration: 0.35, ease: 'easeOut' }, scale: { type: 'spring', stiffness: 200, damping: 15 } }
+            : { opacity: { duration: 1.6, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 1.6, ease: [0.4, 0, 0.2, 1] } }
+          }
         />
         {/* Data labels */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite] pointer-events-none">
@@ -154,29 +161,55 @@ function Home() {
           className="absolute inset-0 cursor-pointer rounded-full"
           onPointerDown={triggerBurst}
         />
-      </div>
+      </motion.div>
 
-      {/* Full-screen burst overlay - shockwave rings from core */}
+      {/* Full-screen burst overlay — soft organic shockwave */}
       {bursting && (
-        <div key={`burst-${burstKey}`} className="fixed inset-0 pointer-events-none" style={{ zIndex: 9999 }}>
-          <div className="absolute inset-0 animate-[burstFlash_0.8s_ease-out_forwards]" style={{
-            background: 'radial-gradient(circle at 10% 85%, rgba(255,255,255,0.9) 0%, rgba(236,72,153,0.6) 8%, rgba(168,85,247,0.3) 20%, transparent 40%)',
-          }} />
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className="absolute" style={{ left: '130px', bottom: '130px', transform: 'translate(-50%, 50%)' }}>
+        <motion.div
+          key={`burst-${burstKey}`}
+          className="fixed inset-0 pointer-events-none"
+          style={{ zIndex: 9999 }}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
+        >
+          {/* Soft radial flash from core — multi-stop gradient for natural diffusion */}
+          <motion.div
+            className="absolute inset-0"
+            initial={{ opacity: 0.9, scale: 0.3 }}
+            animate={{ opacity: 0, scale: 1.8 }}
+            transition={{ duration: 0.9, ease: [0.0, 0.8, 0.2, 1] }}
+            style={{
+              background: 'radial-gradient(circle at 10% 85%, rgba(255,255,255,0.7) 0%, rgba(236,72,153,0.4) 6%, rgba(168,85,247,0.2) 15%, rgba(99,102,241,0.08) 28%, transparent 45%)',
+              filter: 'blur(8px)',
+            }}
+          />
+          {/* Soft glow shockwave rings — no hard borders, organic expansion */}
+          {[0, 1, 2].map(i => (
+            <motion.div
+              key={i}
+              className="absolute"
+              style={{ left: '130px', bottom: '130px', transform: 'translate(-50%, 50%)' }}
+              initial={{ width: 20, height: 20, opacity: 0.7 - i * 0.15 }}
+              animate={{ width: 500 + i * 80, height: 500 + i * 80, opacity: 0 }}
+              transition={{
+                duration: 1.1 + i * 0.15,
+                delay: i * 0.1,
+                ease: [0.05, 0.85, 0.15, 1],
+              }}
+            >
               <div
-                className="rounded-full animate-[burstRing_1s_ease-out_forwards]"
+                className="w-full h-full rounded-full"
                 style={{
-                  border: `${3 - i}px solid ${['rgba(255,255,255,0.9)', 'rgba(236,72,153,0.8)', 'rgba(168,85,247,0.7)', 'rgba(99,102,241,0.5)'][i]}`,
-                  animationDelay: `${i * 0.12}s`,
-                  width: '10px',
-                  height: '10px',
-                  boxShadow: `0 0 ${15 - i * 3}px ${i === 0 ? 'rgba(255,255,255,0.7)' : 'rgba(168,85,247,0.4)'}`,
+                  background: `radial-gradient(circle, transparent ${40 + i * 5}%, ${
+                    ['rgba(255,255,255,0.35)', 'rgba(236,72,153,0.25)', 'rgba(168,85,247,0.15)'][i]
+                  } ${50 + i * 3}%, transparent ${65 + i * 5}%)`,
+                  filter: `blur(${6 + i * 4}px)`,
                 }}
               />
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <Navbar />
@@ -491,6 +524,14 @@ function Home() {
           52% { transform: translateY(-1px); color: rgba(251,191,36,0.9); }
           60% { transform: translateY(0); color: rgba(244,114,182,0.7); }
           100% { transform: translateY(0); color: rgba(244,114,182,0.7); }
+        }
+        /* morphFilter: fast brightness/saturation overshoot → smooth settle */
+        @keyframes morphFilter {
+          0% { filter: brightness(1) saturate(1); }
+          18% { filter: brightness(1.7) saturate(1.5); }
+          38% { filter: brightness(1.25) saturate(1.15); }
+          55% { filter: brightness(1.1) saturate(1.05); }
+          100% { filter: brightness(1) saturate(1); }
         }
         @keyframes burstFlash {
           0% { opacity: 1; transform: scale(0.3); }
