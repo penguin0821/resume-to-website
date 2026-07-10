@@ -8,13 +8,12 @@ import MagicRings from '../components/reactbits/MagicRingsLazy'
 function Home() {
   const navigate = useNavigate()
   const { t } = useLang()
-  const [burstKey, setBurstKey] = useState(0)
   const [bursting, setBursting] = useState(false)
-  const triggerBurst = useCallback((e) => {
-    setBurstKey(k => k + 1)
+  const triggerBurst = useCallback(() => {
+    if (bursting) return // prevent re-trigger during animation
     setBursting(true)
-    setTimeout(() => setBursting(false), 800)
-  }, [])
+    setTimeout(() => setBursting(false), 1800)
+  }, [bursting])
 
   return (
     <div className="min-h-screen bg-[#0a0118] relative overflow-hidden">
@@ -59,9 +58,18 @@ function Home() {
         ))}
       </div>
 
-      {/* Cyber Energy Core v3 — WebGL Orb + MagicRings */}
-      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] z-[15]">
-        {/* MagicRings - expanding concentric rings (pointer-events-none so clicks pass through) */}
+      {/* Cyber Energy Core v3 — WebGL Orb + MagicRings with morph burst */}
+      <div
+        className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] z-[15]"
+        style={{
+          transform: bursting ? 'scale(1.25)' : 'scale(1)',
+          filter: bursting ? 'brightness(2) saturate(1.8)' : 'brightness(1) saturate(1)',
+          transition: bursting
+            ? 'transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1.2), filter 0.35s ease-out'
+            : 'transform 1.4s cubic-bezier(0.4, 0, 0.2, 1), filter 1.4s ease-in-out',
+        }}
+      >
+        {/* MagicRings - expanding concentric rings */}
         <div className="absolute inset-0 pointer-events-none">
           <MagicRings
             color="#a855f7"
@@ -81,54 +89,39 @@ function Home() {
             style={{ width: '100%', height: '100%' }}
           />
         </div>
-        {/* Orb - noise-distorted glowing sphere */}
+        {/* Orb - morphs/distorts during burst */}
         <div className="absolute inset-[50px] pointer-events-none">
           <Orb
             hue={0}
-            hoverIntensity={0.3}
+            hoverIntensity={bursting ? 0.8 : 0.3}
+            forceHoverState={bursting}
             rotateOnHover={true}
             backgroundColor="#0a0118"
             className="w-[160px] h-[160px]"
           />
         </div>
+        {/* Glow aura during burst */}
+        <div
+          className="absolute inset-[-30px] rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(168,85,247,0.4) 0%, rgba(236,72,153,0.2) 40%, transparent 70%)',
+            opacity: bursting ? 1 : 0,
+            transition: bursting ? 'opacity 0.3s ease-out' : 'opacity 1.4s ease-in-out',
+          }}
+        />
         {/* Data labels */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite] pointer-events-none">
           CORE ENERGY
         </div>
         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/10 text-[9px] font-mono text-gray-400/80 whitespace-nowrap pointer-events-none">
-          click to burst ✨
+          click to morph ✨
         </div>
-        {/* Transparent click capture layer - on top of all WebGL elements */}
+        {/* Transparent click capture layer */}
         <div
           className="absolute inset-0 cursor-pointer rounded-full"
           onPointerDown={triggerBurst}
         />
       </div>
-
-      {/* Full-screen burst overlay - outside core container to avoid WebGL compositing */}
-      {bursting && (
-        <div key={`burst-${burstKey}`} className="fixed inset-0 pointer-events-none" style={{ zIndex: 9999 }}>
-          {/* Bright central flash */}
-          <div className="absolute inset-0 animate-[burstFlash_0.6s_ease-out_forwards]" style={{
-            background: 'radial-gradient(circle at 10% 85%, rgba(255,255,255,0.95) 0%, rgba(236,72,153,0.7) 10%, rgba(168,85,247,0.4) 25%, transparent 45%)',
-          }} />
-          {/* Expanding shockwave rings from energy core position */}
-          {[0, 1, 2, 3, 4].map(i => (
-            <div key={i} className="absolute" style={{ left: '130px', bottom: '130px', transform: 'translate(-50%, 50%)' }}>
-              <div
-                className="rounded-full animate-[burstRing_0.8s_ease-out_forwards]"
-                style={{
-                  border: `${4 - i}px solid ${i === 0 ? 'rgba(255,255,255,0.95)' : i === 1 ? 'rgba(236,72,153,0.9)' : i === 2 ? 'rgba(168,85,247,0.8)' : i === 3 ? 'rgba(99,102,241,0.7)' : 'rgba(59,130,246,0.6)'}`,
-                  animationDelay: `${i * 0.08}s`,
-                  width: '10px',
-                  height: '10px',
-                  boxShadow: `0 0 ${20 - i * 3}px ${i === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(168,85,247,0.5)'}`,
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      )}
 
       <Navbar />
 
@@ -429,15 +422,6 @@ function Home() {
           52% { transform: translateY(-1px); color: rgba(251,191,36,0.9); }
           60% { transform: translateY(0); color: rgba(244,114,182,0.7); }
           100% { transform: translateY(0); color: rgba(244,114,182,0.7); }
-        }
-        @keyframes burstFlash {
-          0% { opacity: 1; transform: scale(0.3); }
-          30% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(2); }
-        }
-        @keyframes burstRing {
-          0% { width: 10px; height: 10px; opacity: 1; }
-          100% { width: 500px; height: 500px; opacity: 0; }
         }
       `}</style>
     </div>
