@@ -10,7 +10,8 @@ function Home() {
   const { t } = useLang()
   const [burstKey, setBurstKey] = useState(0)
   const [bursting, setBursting] = useState(false)
-  const triggerBurst = useCallback(() => {
+  const triggerBurst = useCallback((e) => {
+    console.log('🔥 BURST TRIGGERED!', e?.type, e?.target?.tagName)
     setBurstKey(k => k + 1)
     setBursting(true)
     setTimeout(() => setBursting(false), 800)
@@ -60,26 +61,28 @@ function Home() {
       </div>
 
       {/* Cyber Energy Core v3 — WebGL Orb + MagicRings */}
-      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] pointer-events-auto z-[5] cursor-pointer" onClick={triggerBurst}>
-        {/* MagicRings - expanding concentric rings */}
-        <MagicRings
-          color="#a855f7"
-          colorTwo="#ec4899"
-          speed={0.8}
-          ringCount={5}
-          attenuation={8}
-          lineThickness={2.5}
-          baseRadius={0.25}
-          radiusStep={0.07}
-          scaleRate={0.15}
-          opacity={0.9}
-          noiseAmount={0.06}
-          clickBurst={true}
-          hoverScale={1.2}
-          className="absolute inset-0"
-          style={{ width: '100%', height: '100%' }}
-        />
-        {/* Orb - noise-distorted glowing sphere (click-through to MagicRings) */}
+      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] z-[5]">
+        {/* MagicRings - expanding concentric rings (pointer-events-none so clicks pass through) */}
+        <div className="absolute inset-0 pointer-events-none">
+          <MagicRings
+            color="#a855f7"
+            colorTwo="#ec4899"
+            speed={0.8}
+            ringCount={5}
+            attenuation={8}
+            lineThickness={2.5}
+            baseRadius={0.25}
+            radiusStep={0.07}
+            scaleRate={0.15}
+            opacity={0.9}
+            noiseAmount={0.06}
+            clickBurst={false}
+            hoverScale={1.2}
+            className="absolute inset-0"
+            style={{ width: '100%', height: '100%' }}
+          />
+        </div>
+        {/* Orb - noise-distorted glowing sphere */}
         <div className="absolute inset-[50px] pointer-events-none">
           <Orb
             hue={0}
@@ -90,12 +93,17 @@ function Home() {
           />
         </div>
         {/* Data labels */}
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite]">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite] pointer-events-none">
           CORE ENERGY
         </div>
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/10 text-[9px] font-mono text-gray-400/80 whitespace-nowrap">
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/10 text-[9px] font-mono text-gray-400/80 whitespace-nowrap pointer-events-none">
           click to burst ✨
         </div>
+        {/* Transparent click capture layer - on top of all WebGL elements */}
+        <div
+          className="absolute inset-0 cursor-pointer rounded-full"
+          onPointerDown={triggerBurst}
+        />
       </div>
 
       {/* Full-screen burst overlay - outside core container to avoid WebGL compositing */}
@@ -122,6 +130,14 @@ function Home() {
           ))}
         </div>
       )}
+
+      {/* TEST: burst button (top-right corner for debugging) */}
+      <button
+        className="hidden lg:block fixed top-4 right-4 z-[99999] px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm shadow-lg hover:bg-red-500 active:bg-red-700 transition-colors"
+        onPointerDown={triggerBurst}
+      >
+        💥 TEST BURST
+      </button>
 
       <Navbar />
 
