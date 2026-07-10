@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import Navbar from '../components/Navbar'
+import Orb from '../components/reactbits/OrbLazy'
+import MagicRings from '../components/reactbits/MagicRingsLazy'
 
 function Home() {
   const navigate = useNavigate()
@@ -49,74 +51,40 @@ function Home() {
         ))}
       </div>
 
-      {/* Cyber Energy Core v2 — Quiet → Explosion → Quiet */}
-      <div className="hidden lg:flex absolute left-6 bottom-16 w-[240px] h-[240px] pointer-events-none z-[5] items-center justify-center">
-
-        {/* === Layer 1: 3 irregular wave rings emanating outward === */}
-        {/* Ring 1 - largest, slowest */}
-        <div className="absolute w-[220px] h-[220px] animate-[coreRingBurst_8s_ease-in-out_infinite]" style={{
-          background: 'conic-gradient(from 30deg, rgba(168,85,247,0.35), rgba(236,72,153,0.3), rgba(249,115,22,0.2), rgba(236,72,153,0.35), rgba(168,85,247,0.35))',
-          clipPath: 'polygon(50% 0%, 72% 8%, 92% 22%, 100% 48%, 95% 72%, 78% 95%, 52% 100%, 28% 92%, 8% 75%, 0% 50%, 5% 25%, 22% 8%)',
-          filter: 'blur(3px)',
-        }} />
-        {/* Ring 2 - medium, offset delay */}
-        <div className="absolute w-[180px] h-[180px] animate-[coreRingBurst_8s_ease-in-out_infinite_0.4s]" style={{
-          background: 'conic-gradient(from 180deg, rgba(236,72,153,0.4), rgba(168,85,247,0.35), rgba(59,130,246,0.25), rgba(168,85,247,0.4), rgba(236,72,153,0.35))',
-          clipPath: 'polygon(48% 2%, 75% 10%, 95% 30%, 98% 55%, 88% 80%, 65% 97%, 38% 98%, 15% 82%, 3% 58%, 2% 32%, 18% 12%)',
-          filter: 'blur(2px)',
-        }} />
-        {/* Ring 3 - inner, fastest */}
-        <div className="absolute w-[140px] h-[140px] animate-[coreRingBurst_8s_ease-in-out_infinite_0.8s]" style={{
-          background: 'conic-gradient(from 90deg, rgba(249,115,22,0.35), rgba(236,72,153,0.45), rgba(168,85,247,0.4), rgba(236,72,153,0.4), rgba(249,115,22,0.35))',
-          clipPath: 'polygon(50% 3%, 78% 12%, 97% 38%, 95% 65%, 78% 92%, 50% 97%, 22% 90%, 5% 68%, 3% 38%, 20% 12%)',
-          filter: 'blur(1.5px)',
-        }} />
-
-        {/* === Layer 2: Spikes / thorns radiating from center === */}
-        <svg className="absolute w-[200px] h-[200px] animate-[coreSpin_30s_linear_infinite]" viewBox="0 0 200 200">
-          {[...Array(12)].map((_, i) => {
-            const angle = (i * 30) * Math.PI / 180;
-            const baseLen = 30 + (i % 3) * 8;
-            const x1 = 100 + Math.cos(angle) * 28;
-            const y1 = 100 + Math.sin(angle) * 28;
-            const x2 = 100 + Math.cos(angle) * baseLen;
-            const y2 = 100 + Math.sin(angle) * baseLen;
-            const perp = angle + Math.PI / 2;
-            const hw = 2 + (i % 2);
-            return (
-              <polygon key={i}
-                points={`${x1 + Math.cos(perp)*hw},${y1 + Math.sin(perp)*hw} ${x2},${y2} ${x1 - Math.cos(perp)*hw},${y1 - Math.sin(perp)*hw}`}
-                fill={i % 3 === 0 ? 'rgba(168,85,247,0.4)' : i % 3 === 1 ? 'rgba(236,72,153,0.35)' : 'rgba(249,115,22,0.3)'}
-                className="animate-[spikeGrow_8s_ease-in-out_infinite]"
-                style={{ animationDelay: `${i * 0.08}s` }} />
-            );
-          })}
-        </svg>
-
-        {/* === Layer 3: Explosion flash (white/pink burst at peak) === */}
-        <div className="absolute w-[100px] h-[100px] rounded-full animate-[coreFlash_8s_ease-in-out_infinite]"
-          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.9), rgba(236,72,153,0.6), rgba(168,85,247,0.3), transparent)' }} />
-
-        {/* === Layer 4: Core sphere that EXPLODES into spiky shape === */}
-        <div className="absolute w-[80px] h-[80px] animate-[coreShapeShift_8s_ease-in-out_infinite]" style={{
-          background: 'radial-gradient(circle at 38% 38%, #e9d5ff, #c084fc, #a855f7, #7c3aed, #4c1d95)',
-          boxShadow: '0 0 20px 4px rgba(168,85,247,0.4), 0 0 60px 8px rgba(236,72,153,0.2), inset 0 -4px 8px rgba(0,0,0,0.3)',
-        }} />
-        {/* Core highlight (follows shape) */}
-        <div className="absolute w-[80px] h-[80px] animate-[coreShapeShift_8s_ease-in-out_infinite]"
-          style={{ background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.5), transparent 50%)' }} />
-
-        {/* === Layer 5: Horizontal scan texture lines === */}
-        <div className="absolute inset-0 animate-[coreScanTex_8s_ease-in-out_infinite]" style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(168,85,247,0.06) 4px, rgba(168,85,247,0.06) 5px)',
-          clipPath: 'circle(110px at 50% 50%)',
-        }} />
-
-        {/* === Data labels === */}
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite]">
+      {/* Cyber Energy Core v3 — WebGL Orb + MagicRings */}
+      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] pointer-events-auto z-[5]">
+        {/* MagicRings - expanding concentric rings */}
+        <MagicRings
+          color="#a855f7"
+          colorTwo="#ec4899"
+          speed={0.8}
+          ringCount={5}
+          attenuation={8}
+          lineThickness={2.5}
+          baseRadius={0.25}
+          radiusStep={0.07}
+          scaleRate={0.15}
+          opacity={0.9}
+          noiseAmount={0.06}
+          clickBurst={true}
+          hoverScale={1.2}
+          className="absolute inset-0"
+          style={{ width: '100%', height: '100%' }}
+        />
+        {/* Orb - noise-distorted glowing sphere */}
+        <Orb
+          hue={0}
+          hoverIntensity={0.3}
+          rotateOnHover={true}
+          backgroundColor="#0a0118"
+          className="absolute inset-[50px]"
+          style={{ width: '160px', height: '160px' }}
+        />
+        {/* Data labels */}
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite]">
           CORE ENERGY
         </div>
-        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-pink-500/20 text-[9px] font-mono text-pink-400/80 whitespace-nowrap animate-[coreNumJump_8s_ease-in-out_infinite]">
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-pink-500/20 text-[9px] font-mono text-pink-400/80 whitespace-nowrap">
           {'{'}power: 24%{'}'}
         </div>
       </div>

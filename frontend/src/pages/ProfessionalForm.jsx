@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import Navbar from '../components/Navbar'
 import ResumeForm from '../components/ResumeForm'
+import ElectricBorder from '../components/reactbits/ElectricBorder'
 
 function ProfessionalForm() {
   const { t, lang } = useLang()
@@ -419,6 +420,19 @@ function ProfessionalForm() {
       `}</style>
       <Navbar />
       <main className="relative z-10 max-w-3xl mx-auto px-6 py-10">
+        {/* ElectricBorder - floating status card with lightning border */}
+        <div className="hidden lg:block fixed top-32 right-8 w-[160px] z-0 opacity-[0.5]">
+          <ElectricBorder color="#1e40af" speed={0.8} chaos={0.08} borderRadius={12}>
+            <div className="p-4 bg-white/60 backdrop-blur-sm rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                <span className="text-[10px] font-semibold text-gray-700 uppercase tracking-wider">Status</span>
+              </div>
+              <div className="text-xl font-bold text-gray-800">Ready</div>
+              <div className="text-[10px] text-gray-500 mt-1">Professional mode</div>
+            </div>
+          </ElectricBorder>
+        </div>
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-lg shadow-lg shadow-gray-300">{'\u{1F4BC}'}</div>

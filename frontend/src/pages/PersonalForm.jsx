@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import Navbar from '../components/Navbar'
 import ResumeForm from '../components/ResumeForm'
+import MetaBalls from '../components/reactbits/MetaBallsLazy'
 
 function PersonalForm() {
   const { t, lang } = useLang()
@@ -677,6 +678,20 @@ function PersonalForm() {
       `}</style>
       <Navbar />
       <main className="relative z-10 max-w-3xl mx-auto px-6 py-10">
+        {/* MetaBalls - organic liquid blobs on right side */}
+        <div className="hidden lg:block fixed top-1/4 right-0 w-[300px] h-[400px] pointer-events-none opacity-[0.12] z-0">
+          <MetaBalls
+            color="#a855f7"
+            cursorBallColor="#ec4899"
+            speed={0.2}
+            ballCount={10}
+            animationSize={25}
+            clumpFactor={0.8}
+            enableMouseInteraction={false}
+            enableTransparency={true}
+            className="w-full h-full"
+          />
+        </div>
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg shadow-lg shadow-indigo-200">{'\u{1F3A8}'}</div>
