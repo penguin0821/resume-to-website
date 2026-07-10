@@ -97,14 +97,14 @@ function Home() {
         <div className="absolute w-[100px] h-[100px] rounded-full animate-[coreFlash_8s_ease-in-out_infinite]"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.9), rgba(236,72,153,0.6), rgba(168,85,247,0.3), transparent)' }} />
 
-        {/* === Layer 4: Solid core sphere === */}
-        <div className="absolute w-[56px] h-[56px] rounded-full animate-[coreBreathe_8s_ease-in-out_infinite]" style={{
-          background: 'radial-gradient(circle at 35% 35%, #c084fc, #a855f7, #7c3aed, #4c1d95)',
+        {/* === Layer 4: Core sphere that EXPLODES into spiky shape === */}
+        <div className="absolute w-[80px] h-[80px] animate-[coreShapeShift_8s_ease-in-out_infinite]" style={{
+          background: 'radial-gradient(circle at 38% 38%, #e9d5ff, #c084fc, #a855f7, #7c3aed, #4c1d95)',
           boxShadow: '0 0 20px 4px rgba(168,85,247,0.4), 0 0 60px 8px rgba(236,72,153,0.2), inset 0 -4px 8px rgba(0,0,0,0.3)',
         }} />
-        {/* Core highlight */}
-        <div className="absolute w-[20px] h-[20px] rounded-full top-[62px] left-[82px] animate-[coreBreathe_8s_ease-in-out_infinite]"
-          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.6), transparent)' }} />
+        {/* Core highlight (follows shape) */}
+        <div className="absolute w-[80px] h-[80px] animate-[coreShapeShift_8s_ease-in-out_infinite]"
+          style={{ background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.5), transparent 50%)' }} />
 
         {/* === Layer 5: Horizontal scan texture lines === */}
         <div className="absolute inset-0 animate-[coreScanTex_8s_ease-in-out_infinite]" style={{
@@ -374,6 +374,39 @@ function Home() {
           52% { transform: scale(1.08); box-shadow: 0 0 35px 10px rgba(168,85,247,0.7), 0 0 80px 20px rgba(236,72,153,0.4); }
           75% { transform: scale(0.92); box-shadow: 0 0 15px 3px rgba(168,85,247,0.35), 0 0 35px 6px rgba(236,72,153,0.18); }
           100% { transform: scale(0.9); box-shadow: 0 0 15px 2px rgba(168,85,247,0.3), 0 0 30px 4px rgba(236,72,153,0.15); }
+        }
+        /* Core sphere morphs from circle → irregular spiky star → circle */
+        @keyframes coreShapeShift {
+          0%, 22% {
+            clip-path: circle(42% at 50% 50%);
+            transform: scale(0.85) rotate(0deg);
+            box-shadow: 0 0 15px 2px rgba(168,85,247,0.3), 0 0 30px 4px rgba(236,72,153,0.15);
+          }
+          35% {
+            clip-path: polygon(50% 8%, 62% 22%, 82% 15%, 76% 36%, 98% 44%, 80% 56%, 88% 78%, 66% 72%, 54% 92%, 46% 76%, 28% 86%, 32% 64%, 8% 68%, 22% 48%, 4% 32%, 26% 32%, 20% 12%, 40% 22%);
+            transform: scale(0.95) rotate(10deg);
+            box-shadow: 0 0 25px 8px rgba(168,85,247,0.5), 0 0 50px 12px rgba(236,72,153,0.3);
+          }
+          50% {
+            clip-path: polygon(50% 2%, 60% 18%, 78% 5%, 74% 28%, 100% 35%, 82% 50%, 95% 72%, 70% 68%, 58% 98%, 48% 72%, 22% 92%, 30% 62%, 0% 65%, 20% 42%, 2% 25%, 24% 28%, 18% 5%, 38% 18%);
+            transform: scale(1.15) rotate(-5deg);
+            box-shadow: 0 0 40px 15px rgba(168,85,247,0.7), 0 0 80px 25px rgba(236,72,153,0.5), 0 0 120px 40px rgba(249,115,22,0.2);
+          }
+          58% {
+            clip-path: polygon(50% 5%, 58% 20%, 75% 10%, 72% 32%, 95% 40%, 78% 54%, 90% 75%, 65% 70%, 55% 95%, 45% 70%, 20% 88%, 28% 60%, 5% 60%, 22% 40%, 8% 22%, 28% 30%, 22% 8%, 42% 20%);
+            transform: scale(1.05) rotate(3deg);
+            box-shadow: 0 0 30px 10px rgba(168,85,247,0.5), 0 0 60px 15px rgba(236,72,153,0.35);
+          }
+          78% {
+            clip-path: circle(42% at 50% 50%);
+            transform: scale(0.88) rotate(-2deg);
+            box-shadow: 0 0 15px 3px rgba(168,85,247,0.3), 0 0 30px 5px rgba(236,72,153,0.15);
+          }
+          100% {
+            clip-path: circle(42% at 50% 50%);
+            transform: scale(0.85) rotate(0deg);
+            box-shadow: 0 0 15px 2px rgba(168,85,247,0.3), 0 0 30px 4px rgba(236,72,153,0.15);
+          }
         }
         @keyframes coreScanTex {
           0%, 25% { opacity: 0.3; }
