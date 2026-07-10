@@ -328,9 +328,49 @@ function ProfessionalForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-gray-100/70">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-gray-100/70 relative overflow-hidden">
+      {/* Animated background - elegant corporate style */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Subtle gradient orbs */}
+        <div className="absolute top-10 -right-20 w-[350px] h-[350px] bg-blue-200/25 rounded-full blur-[80px] animate-[proBreathe_10s_ease-in-out_infinite]" />
+        <div className="absolute bottom-20 -left-16 w-[300px] h-[300px] bg-slate-300/20 rounded-full blur-[70px] animate-[proBreathe_12s_ease-in-out_infinite_4s]" />
+        <div className="absolute top-2/3 right-1/4 w-[250px] h-[250px] bg-amber-200/10 rounded-full blur-[60px] animate-[proBreathe_9s_ease-in-out_infinite_2s]" />
+        {/* Fine grid pattern */}
+        <div className="absolute inset-0 opacity-[0.025]" style={{
+          backgroundImage: 'linear-gradient(rgba(30,41,59,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,0.3) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }} />
+        {/* Diagonal accent lines */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] opacity-[0.03]" style={{
+          backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(30,64,175,0.3) 40px, rgba(30,64,175,0.3) 41px)',
+        }} />
+        {/* Floating dots */}
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="absolute rounded-full animate-[proFloat_14s_ease-in-out_infinite]"
+            style={{
+              width: 2 + (i % 2) * 2,
+              height: 2 + (i % 2) * 2,
+              left: `${15 + (i * 14) % 70}%`,
+              top: `${10 + (i * 17) % 70}%`,
+              background: i % 2 === 0 ? 'rgba(30,64,175,0.15)' : 'rgba(201,169,110,0.2)',
+              animationDelay: `${i * 2}s`,
+              animationDuration: `${12 + (i % 3) * 3}s`,
+            }} />
+        ))}
+      </div>
+      <style>{`
+        @keyframes proBreathe {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.06); }
+        }
+        @keyframes proFloat {
+          0%, 100% { transform: translate(0, 0); opacity: 0.2; }
+          33% { transform: translate(8px, -20px); opacity: 0.4; }
+          66% { transform: translate(-6px, -35px); opacity: 0.15; }
+        }
+      `}</style>
       <Navbar />
-      <main className="max-w-3xl mx-auto px-6 py-10">
+      <main className="relative z-10 max-w-3xl mx-auto px-6 py-10">
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-lg shadow-lg shadow-gray-300">{'\u{1F4BC}'}</div>

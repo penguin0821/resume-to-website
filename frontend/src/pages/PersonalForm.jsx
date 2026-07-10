@@ -607,9 +607,48 @@ function PersonalForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50/80 via-purple-50/50 to-pink-50/80">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50/80 via-purple-50/50 to-pink-50/80 relative overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Floating orbs */}
+        <div className="absolute top-20 -left-32 w-[400px] h-[400px] bg-purple-300/20 rounded-full blur-[80px] animate-[pfBreathe_8s_ease-in-out_infinite]" />
+        <div className="absolute bottom-40 -right-24 w-[350px] h-[350px] bg-pink-300/20 rounded-full blur-[70px] animate-[pfBreathe_10s_ease-in-out_infinite_3s]" />
+        <div className="absolute top-1/2 left-1/3 w-[300px] h-[300px] bg-indigo-300/15 rounded-full blur-[60px] animate-[pfBreathe_7s_ease-in-out_infinite_5s]" />
+        {/* Subtle grid */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'radial-gradient(circle, rgba(99,102,241,0.4) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }} />
+        {/* Floating particles */}
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="absolute rounded-full animate-[pfFloat_12s_linear_infinite]"
+            style={{
+              width: 3 + (i % 3) * 2,
+              height: 3 + (i % 3) * 2,
+              left: `${10 + (i * 11) % 80}%`,
+              top: `${20 + (i * 13) % 60}%`,
+              background: i % 2 === 0 ? 'rgba(139,92,246,0.25)' : 'rgba(236,72,153,0.2)',
+              animationDelay: `${i * 1.5}s`,
+              animationDuration: `${10 + (i % 4) * 3}s`,
+            }} />
+        ))}
+      </div>
+      <style>{`
+        @keyframes pfBreathe {
+          0%, 100% { opacity: 0.6; transform: scale(1) translate(0, 0); }
+          33% { opacity: 1; transform: scale(1.1) translate(10px, -10px); }
+          66% { opacity: 0.4; transform: scale(0.95) translate(-5px, 8px); }
+        }
+        @keyframes pfFloat {
+          0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+          25% { transform: translate(15px, -30px) scale(1.2); opacity: 0.5; }
+          50% { transform: translate(-10px, -60px) scale(0.8); opacity: 0.2; }
+          75% { transform: translate(20px, -40px) scale(1.1); opacity: 0.4; }
+          100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+        }
+      `}</style>
       <Navbar />
-      <main className="max-w-3xl mx-auto px-6 py-10">
+      <main className="relative z-10 max-w-3xl mx-auto px-6 py-10">
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg shadow-lg shadow-indigo-200">{'\u{1F3A8}'}</div>
