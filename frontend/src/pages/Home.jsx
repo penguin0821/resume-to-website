@@ -8,20 +8,45 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-[#0a0118] relative overflow-hidden">
-      {/* Gradient background layers */}
+      {/* === CYBER BACKGROUND LAYERS === */}
       <div className="absolute inset-0">
-        {/* Main gradient */}
+        {/* Base gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a0533] via-[#0f0a2e] to-[#0a0118]" />
-        {/* Purple glow */}
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px]" />
-        {/* Blue glow */}
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-[100px]" />
-        {/* Orange accent */}
-        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-orange-500/10 rounded-full blur-[80px]" />
+
+        {/* Grid overlay (Bauhaus-inspired) */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: 'linear-gradient(rgba(139,92,246,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.5) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }} />
+
+        {/* Animated glow orbs */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px] animate-[breathe_8s_ease-in-out_infinite]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-[100px] animate-[breathe_10s_ease-in-out_infinite_2s]" />
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-orange-500/10 rounded-full blur-[80px] animate-[breathe_7s_ease-in-out_infinite_4s]" />
+
         {/* Light beams */}
         <div className="absolute top-0 left-1/3 w-px h-full bg-gradient-to-b from-purple-500/20 via-transparent to-transparent" />
         <div className="absolute top-0 left-2/3 w-px h-full bg-gradient-to-b from-blue-500/15 via-transparent to-transparent" />
-        <div className="absolute top-0 left-1/2 w-px h-full bg-gradient-to-b from-purple-400/10 via-transparent to-transparent" />
+
+        {/* Scanning line */}
+        <div className="absolute left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-400/30 to-transparent animate-[scanLine_8s_linear_infinite]" />
+      </div>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(12)].map((_, i) => (
+          <div key={i} className="absolute rounded-full animate-[particleUp_10s_linear_infinite]"
+            style={{
+              width: 2 + (i % 3) * 1.5,
+              height: 2 + (i % 3) * 1.5,
+              left: `${8 + (i * 7.5) % 85}%`,
+              bottom: '-5%',
+              background: i % 3 === 0 ? '#a855f7' : i % 3 === 1 ? '#ec4899' : '#3b82f6',
+              opacity: 0.3 + (i % 4) * 0.1,
+              animationDelay: `${i * 0.8}s`,
+              animationDuration: `${8 + (i % 5) * 2}s`,
+            }} />
+        ))}
       </div>
 
       <Navbar />
@@ -71,25 +96,44 @@ function Home() {
               </div>
             </div>
 
-            {/* Right: Penguin mascot */}
+            {/* Right: Penguin mascot with cyber effects */}
             <div className="flex-shrink-0 relative">
+              {/* Ripple rings (energy field effect from Image 1) */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                {[0, 1, 2, 3, 4].map(i => (
+                  <div key={i} className="absolute rounded-full border animate-[ripple_6s_ease-out_infinite]"
+                    style={{
+                      width: 180 + i * 50,
+                      height: 180 + i * 50,
+                      borderColor: i % 2 === 0 ? 'rgba(168,85,247,0.15)' : 'rgba(236,72,153,0.1)',
+                      animationDelay: `${i * 1.2}s`,
+                    }} />
+                ))}
+              </div>
+
               {/* Glow behind penguin */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 to-blue-500/20 rounded-full blur-[60px] scale-110" />
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 to-blue-500/20 rounded-full blur-[60px] scale-110 animate-[breathe_5s_ease-in-out_infinite]" />
+
               {/* Penguin image */}
               <img
                 src="/images/penguin-logo.png"
                 alt="Penguin Mascot"
                 className="relative w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-[0_0_40px_rgba(139,92,246,0.3)] animate-[float_6s_ease-in-out_infinite]"
               />
-              {/* Floating badges around penguin */}
-              <div className="absolute top-4 -right-2 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-xs text-white font-medium animate-[float_4s_ease-in-out_infinite_0.5s]">
-                React + Vite
+
+              {/* Floating tech badges (cyberpunk data labels) */}
+              <div className="absolute top-4 -right-2 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-lg border border-purple-400/30 text-[10px] font-mono text-purple-300 animate-[float_4s_ease-in-out_infinite_0.5s]">
+                <span className="text-purple-500">SYS</span> React + Vite
               </div>
-              <div className="absolute bottom-12 -left-4 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-xs text-white font-medium animate-[float_5s_ease-in-out_infinite_1s]">
-                Gemini AI
+              <div className="absolute bottom-12 -left-4 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-lg border border-pink-400/30 text-[10px] font-mono text-pink-300 animate-[float_5s_ease-in-out_infinite_1s]">
+                <span className="text-pink-500">AI</span> Gemini 2.0
               </div>
-              <div className="absolute top-1/2 -right-6 px-3 py-1.5 bg-purple-500/20 backdrop-blur-md rounded-full border border-purple-400/30 text-xs text-purple-300 font-medium animate-[float_4.5s_ease-in-out_infinite_0.3s]">
-                {'\u2728'} Tailwind
+              <div className="absolute top-1/2 -right-8 px-3 py-1.5 bg-purple-500/20 backdrop-blur-md rounded-lg border border-purple-400/30 text-[10px] font-mono text-purple-300 animate-[float_4.5s_ease-in-out_infinite_0.3s]">
+                {'\u2728'} Tailwind CSS
+              </div>
+              {/* Flickering data readout (bottom-right) */}
+              <div className="absolute -bottom-2 right-2 px-2.5 py-1 bg-black/40 backdrop-blur-sm rounded border border-green-500/30 text-[9px] font-mono text-green-400/80 animate-[flicker_4s_steps(1)_infinite]">
+                STATUS: ONLINE {'\u25CF'}
               </div>
             </div>
           </div>
@@ -197,6 +241,31 @@ function Home() {
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-12px); }
+        }
+        @keyframes breathe {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.08); }
+        }
+        @keyframes ripple {
+          0% { transform: scale(0.8); opacity: 0.6; }
+          50% { transform: scale(1.1); opacity: 0; }
+          100% { transform: scale(0.8); opacity: 0; }
+        }
+        @keyframes scanLine {
+          0% { top: -2%; }
+          100% { top: 102%; }
+        }
+        @keyframes particleUp {
+          0% { transform: translateY(0) scale(1); opacity: 0; }
+          10% { opacity: 0.5; }
+          90% { opacity: 0.3; }
+          100% { transform: translateY(-110vh) scale(0.3); opacity: 0; }
+        }
+        @keyframes flicker {
+          0%, 100% { opacity: 0.8; }
+          30% { opacity: 0.4; }
+          50% { opacity: 1; }
+          70% { opacity: 0.6; }
         }
       `}</style>
     </div>
