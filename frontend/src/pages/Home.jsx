@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import Navbar from '../components/Navbar'
@@ -7,6 +8,11 @@ import MagicRings from '../components/reactbits/MagicRingsLazy'
 function Home() {
   const navigate = useNavigate()
   const { t } = useLang()
+  const [flash, setFlash] = useState(false)
+  const triggerBurst = useCallback(() => {
+    setFlash(true)
+    setTimeout(() => setFlash(false), 400)
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#0a0118] relative overflow-hidden">
@@ -52,7 +58,7 @@ function Home() {
       </div>
 
       {/* Cyber Energy Core v3 — WebGL Orb + MagicRings */}
-      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] pointer-events-auto z-[5]">
+      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] pointer-events-auto z-[5]" onClick={triggerBurst}>
         {/* MagicRings - expanding concentric rings */}
         <MagicRings
           color="#a855f7"
@@ -71,6 +77,10 @@ function Home() {
           className="absolute inset-0"
           style={{ width: '100%', height: '100%' }}
         />
+        {/* Burst flash overlay */}
+        <div className={`absolute inset-0 rounded-full pointer-events-none transition-opacity duration-300 ${flash ? 'opacity-100' : 'opacity-0'}`} style={{
+          background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(236,72,153,0.6) 30%, rgba(168,85,247,0.3) 50%, transparent 70%)',
+        }} />
         {/* Orb - noise-distorted glowing sphere (click-through to MagicRings) */}
         <div className="absolute inset-[50px] pointer-events-none">
           <Orb

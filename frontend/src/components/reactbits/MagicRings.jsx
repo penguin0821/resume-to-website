@@ -43,10 +43,11 @@ void main() {
   float cr = cos(uRotation), sr = sin(uRotation);
   p = mat2(cr, -sr, sr, cr) * p;
   p -= uMouse * uMouseInfluence;
-  float sc = mix(1.0, uHoverScale, uHoverAmount) + uBurst * 0.3;
+  float sc = mix(1.0, uHoverScale, uHoverAmount) + uBurst * 1.2;
   p /= sc;
   vec3 c = vec3(0.0);
   float rcf = max(float(uRingCount) - 1.0, 1.0);
+  float burstAtt = max(uAttenuation - uBurst * 6.0, 2.0);
   for (int i = 0; i < 10; i++) {
     if (i >= uRingCount) break;
     float fi = float(i);
@@ -54,7 +55,10 @@ void main() {
     vec3 rc = mix(uColor, uColorTwo, fi / rcf);
     c = mix(c, rc, vec3(ring(pr, uBaseRadius + fi * uRadiusStep, pow(uRingGap, fi), i == 0 ? 0.0 : 2.95 * fi, px)));
   }
-  c *= 1.0 + uBurst * 2.0;
+  c *= 1.0 + uBurst * 8.0;
+  // White flash at center during burst
+  float flashDist = length(p) * 3.0;
+  c += vec3(1.0, 0.9, 0.95) * uBurst * exp(-flashDist * flashDist * 2.0) * 3.0;
   float n = fract(sin(dot(gl_FragCoord.xy + uTime * 100.0, vec2(12.9898, 78.233))) * 43758.5453);
   c += (n - 0.5) * uNoiseAmount;
   gl_FragColor = vec4(c, max(c.r, max(c.g, c.b)) * uOpacity);
@@ -171,7 +175,7 @@ export default function MagicRings({
     };
     const onMouseEnter = () => { isHoveredRef.current = true; };
     const onMouseLeave = () => { isHoveredRef.current = false; mouseRef.current = [0, 0]; };
-    const onClick = () => { burstRef.current = 1; };
+    const onClick = () => { burstRef.current = 1.5; };
 
     mount.addEventListener('mousemove', onMouseMove);
     mount.addEventListener('mouseenter', onMouseEnter);
@@ -185,11 +189,11 @@ export default function MagicRings({
       smoothMouseRef.current[0] += (mouseRef.current[0] - smoothMouseRef.current[0]) * 0.08;
       smoothMouseRef.current[1] += (mouseRef.current[1] - smoothMouseRef.current[1]) * 0.08;
       hoverAmountRef.current += ((isHoveredRef.current ? 1 : 0) - hoverAmountRef.current) * 0.08;
-      burstRef.current *= 0.95;
+      burstRef.current *= 0.93;
       if (burstRef.current < 0.001) burstRef.current = 0;
 
       uniforms.uTime.value = t * 0.001 * p.speed;
-      uniforms.uAttenuation.value = p.attenuation;
+      uniforms.uAttenuation.value = Math.max(p.attenuation - burstRef.current * 5.0, 2.0);
       uniforms.uColor.value.set(p.color);
       uniforms.uColorTwo.value.set(p.colorTwo);
       uniforms.uLineThickness.value = p.lineThickness;
