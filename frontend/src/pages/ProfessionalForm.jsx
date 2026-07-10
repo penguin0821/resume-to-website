@@ -357,6 +357,46 @@ function ProfessionalForm() {
               animationDuration: `${12 + (i % 3) * 3}s`,
             }} />
         ))}
+
+        {/* 3D Wireframe geometric composition (cube + sphere rotating) */}
+        <div className="hidden lg:block absolute top-28 right-6 w-[180px] h-[180px]" style={{ perspective: '600px' }}>
+          <div className="w-full h-full animate-[geoSpin_20s_linear_infinite]" style={{ transformStyle: 'preserve-3d' }}>
+            {/* Wireframe cube faces */}
+            {[
+              { t: 'rotateY(0deg) translateZ(60px)', border: 'rgba(30,64,175,0.12)' },
+              { t: 'rotateY(90deg) translateZ(60px)', border: 'rgba(30,64,175,0.10)' },
+              { t: 'rotateY(180deg) translateZ(60px)', border: 'rgba(30,64,175,0.08)' },
+              { t: 'rotateY(270deg) translateZ(60px)', border: 'rgba(30,64,175,0.10)' },
+              { t: 'rotateX(90deg) translateZ(60px)', border: 'rgba(201,169,110,0.12)' },
+              { t: 'rotateX(-90deg) translateZ(60px)', border: 'rgba(201,169,110,0.10)' },
+            ].map((face, i) => (
+              <div key={i} className="absolute inset-[30px] border-2 rounded-sm"
+                style={{
+                  transform: face.t,
+                  backfaceVisibility: 'visible',
+                  borderColor: face.border,
+                  transformStyle: 'preserve-3d',
+                }} />
+            ))}
+            {/* Inner sphere (circle outline) */}
+            <div className="absolute inset-[45px] rounded-full border-2 animate-[geoSpinReverse_12s_linear_infinite]"
+              style={{ borderColor: 'rgba(201,169,110,0.15)', transformStyle: 'preserve-3d' }} />
+            <div className="absolute inset-[55px] rounded-full border"
+              style={{ borderColor: 'rgba(30,64,175,0.08)', transform: 'rotateX(60deg)' }} />
+            <div className="absolute inset-[55px] rounded-full border"
+              style={{ borderColor: 'rgba(30,64,175,0.08)', transform: 'rotateY(60deg)' }} />
+          </div>
+        </div>
+        {/* Second smaller geometric - wireframe triangle */}
+        <div className="hidden lg:block absolute bottom-40 right-20 w-[100px] h-[100px] opacity-[0.06]">
+          <div className="w-full h-full animate-[geoSpin_15s_linear_infinite_reverse]" style={{ perspective: '400px' }}>
+            <svg viewBox="0 0 100 100" className="w-full h-full">
+              <polygon points="50,5 95,90 5,90" fill="none" stroke="rgba(30,64,175,0.6)" strokeWidth="1.5" />
+              <polygon points="50,20 80,80 20,80" fill="none" stroke="rgba(201,169,110,0.5)" strokeWidth="1" />
+              <circle cx="50" cy="55" r="20" fill="none" stroke="rgba(30,64,175,0.4)" strokeWidth="0.8" />
+            </svg>
+          </div>
+        </div>
       </div>
       <style>{`
         @keyframes proBreathe {
@@ -367,6 +407,14 @@ function ProfessionalForm() {
           0%, 100% { transform: translate(0, 0); opacity: 0.2; }
           33% { transform: translate(8px, -20px); opacity: 0.4; }
           66% { transform: translate(-6px, -35px); opacity: 0.15; }
+        }
+        @keyframes geoSpin {
+          from { transform: rotateX(15deg) rotateY(0deg); }
+          to { transform: rotateX(15deg) rotateY(360deg); }
+        }
+        @keyframes geoSpinReverse {
+          from { transform: rotateX(-10deg) rotateY(360deg) rotateZ(0deg); }
+          to { transform: rotateX(-10deg) rotateY(0deg) rotateZ(360deg); }
         }
       `}</style>
       <Navbar />

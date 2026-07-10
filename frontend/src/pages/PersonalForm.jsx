@@ -632,6 +632,21 @@ function PersonalForm() {
               animationDuration: `${10 + (i % 4) * 3}s`,
             }} />
         ))}
+
+        {/* Morphing abstract blob (graffiti shape-shifting every 5s) */}
+        <div className="hidden lg:block absolute top-32 right-8 w-[200px] h-[200px] opacity-[0.12]">
+          <div className="w-full h-full animate-[blobMorph_15s_ease-in-out_infinite]" style={{
+            background: 'linear-gradient(135deg, #a855f7, #ec4899, #f97316)',
+            filter: 'blur(1px)',
+          }} />
+        </div>
+        {/* Second smaller blob */}
+        <div className="hidden lg:block absolute bottom-48 right-24 w-[120px] h-[120px] opacity-[0.08]">
+          <div className="w-full h-full animate-[blobMorph2_12s_ease-in-out_infinite_3s]" style={{
+            background: 'linear-gradient(45deg, #6366f1, #8b5cf6, #d946ef)',
+            filter: 'blur(1px)',
+          }} />
+        </div>
       </div>
       <style>{`
         @keyframes pfBreathe {
@@ -645,6 +660,19 @@ function PersonalForm() {
           50% { transform: translate(-10px, -60px) scale(0.8); opacity: 0.2; }
           75% { transform: translate(20px, -40px) scale(1.1); opacity: 0.4; }
           100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+        }
+        @keyframes blobMorph {
+          0%, 100% { clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%); transform: rotate(0deg) scale(1); }
+          20% { clip-path: polygon(30% 5%, 80% 10%, 100% 45%, 85% 85%, 50% 100%, 15% 80%, 5% 35%); transform: rotate(20deg) scale(1.05); }
+          40% { clip-path: polygon(50% 5%, 95% 25%, 90% 70%, 65% 95%, 35% 95%, 5% 70%, 10% 25%); transform: rotate(-15deg) scale(0.95); }
+          60% { clip-path: polygon(40% 0%, 85% 15%, 100% 55%, 80% 90%, 45% 100%, 10% 85%, 0% 40%); transform: rotate(10deg) scale(1.08); }
+          80% { clip-path: polygon(55% 2%, 92% 30%, 95% 65%, 70% 95%, 30% 98%, 5% 65%, 8% 28%); transform: rotate(-25deg) scale(0.92); }
+        }
+        @keyframes blobMorph2 {
+          0%, 100% { clip-path: circle(40% at 50% 50%); transform: rotate(0deg); }
+          25% { clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); transform: rotate(90deg); }
+          50% { clip-path: polygon(50% 5%, 93% 25%, 93% 75%, 50% 95%, 7% 75%, 7% 25%); transform: rotate(180deg); }
+          75% { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); transform: rotate(270deg); }
         }
       `}</style>
       <Navbar />
