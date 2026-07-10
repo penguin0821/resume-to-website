@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import Navbar from '../components/Navbar'
+import * as htmlToImage from 'html-to-image'
 
 function Preview() {
   const { t } = useLang()
@@ -18,6 +19,8 @@ function Preview() {
   const [deployError, setDeployError] = useState('')
   const [copied, setCopied] = useState(false)
   const [copiedHtml, setCopiedHtml] = useState(false)
+  const [screenshotting, setScreenshotting] = useState(false)
+  const iframeRef = useRef(null)
   // GitHub Pages fields
   const [ghToken, setGhToken] = useState('')
   const [repoName, setRepoName] = useState('my-resume-site')
@@ -86,6 +89,42 @@ function Preview() {
     }
   }
 
+  const takeScreenshot = useCallback(async () => {
+    if (!iframeRef.current) return
+    setScreenshotting(true)
+    try {
+      const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document
+      if (!iframeDoc || !iframeDoc.body) {
+        // Fallback: screenshot the iframe container
+        const dataUrl = await htmlToImage.toPng(iframeRef.current.parentElement, {
+          quality: 0.95,
+          pixelRatio: 2,
+          cacheBust: true,
+        })
+        const link = document.createElement('a')
+        link.download = `resume-site-preview-${mode || 'personal'}.png`
+        link.href = dataUrl
+        link.click()
+        return
+      }
+      const dataUrl = await htmlToImage.toPng(iframeDoc.body, {
+        quality: 0.95,
+        pixelRatio: 2,
+        cacheBust: true,
+        width: iframeDoc.body.scrollWidth,
+        height: Math.min(iframeDoc.body.scrollHeight, 1200),
+      })
+      const link = document.createElement('a')
+      link.download = `resume-site-preview-${mode || 'personal'}.png`
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      console.error('Screenshot failed:', err)
+    } finally {
+      setScreenshotting(false)
+    }
+  }, [mode])
+
   const handleDeploy = () => {
     if (deployTab === 'netlify') deployNetlify()
     else deployGitHub()
@@ -123,12 +162,19 @@ function Preview() {
               {copiedHtml ? (t.copied || 'Copied!') : (t.copyHtml || 'Copy HTML')}
             </button>
             <button onClick={downloadHtml} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium transition-colors">{t.downloadHtml}</button>
+            <button
+              onClick={takeScreenshot}
+              disabled={screenshotting}
+              className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {screenshotting ? '📸 ...' : '📸 Screenshot'}
+            </button>
           </div>
         </div>
 
         {/* Preview iframe */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
-          <iframe srcDoc={html} className="w-full h-[70vh] border-0" title="Preview" sandbox="allow-scripts" />
+          <iframe ref={iframeRef} srcDoc={html} className="w-full h-[70vh] border-0" title="Preview" sandbox="allow-scripts" />
         </div>
 
         {/* Deploy Section */}

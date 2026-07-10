@@ -1,9 +1,40 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import Navbar from '../components/Navbar'
 import Orb from '../components/reactbits/OrbLazy'
 import MagicRings from '../components/reactbits/MagicRingsLazy'
+import { motion } from 'motion/react'
+
+// Custom typewriter effect - React 19 compatible
+function Typewriter({ text, speed = 50, className }) {
+  const [displayed, setDisplayed] = useState('')
+  const [done, setDone] = useState(false)
+  const idx = useRef(0)
+
+  useEffect(() => {
+    idx.current = 0
+    setDisplayed('')
+    setDone(false)
+    const timer = setInterval(() => {
+      idx.current++
+      if (idx.current > text.length) {
+        clearInterval(timer)
+        setDone(true)
+        return
+      }
+      setDisplayed(text.slice(0, idx.current))
+    }, speed)
+    return () => clearInterval(timer)
+  }, [text, speed])
+
+  return (
+    <span className={className}>
+      {displayed}
+      <span className={`inline-block w-[3px] h-[0.85em] bg-current ml-1 align-middle ${done ? 'animate-pulse' : 'animate-[flicker_0.6s_steps(1)_infinite]'}`} />
+    </span>
+  )
+}
 
 function Home() {
   const navigate = useNavigate()
@@ -162,14 +193,12 @@ function Home() {
                 <span className="text-sm text-gray-300">AI-Powered Website Builder</span>
               </div>
 
-              <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight mb-6">
-                <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                  {t.heroTitle.split(' ').slice(0, 2).join(' ')}
-                </span>
-                <br />
-                <span className="text-white">
-                  {t.heroTitle.split(' ').slice(2).join(' ')}
-                </span>
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6">
+                <Typewriter
+                  text={t.heroTitle}
+                  speed={60}
+                  className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent"
+                />
               </h1>
 
               <p className="text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed">
@@ -242,9 +271,13 @@ function Home() {
         <div className="max-w-5xl mx-auto px-6 pb-20">
           <div className="grid md:grid-cols-2 gap-6">
             {/* Personal & Creative Card */}
-            <button
+            <motion.button
               onClick={() => navigate('/form/personal')}
               className="group relative text-left cursor-pointer"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
               {/* Card glow on hover */}
               <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-purple-500/50 via-pink-500/30 to-orange-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
@@ -276,12 +309,16 @@ function Home() {
                   <span className="text-lg">{'\u2192'}</span>
                 </div>
               </div>
-            </button>
+            </motion.button>
 
             {/* Professional & Elite Card */}
-            <button
+            <motion.button
               onClick={() => navigate('/form/professional')}
               className="group relative text-left cursor-pointer"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             >
               {/* Card glow on hover */}
               <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-blue-500/50 via-cyan-500/30 to-emerald-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
@@ -312,7 +349,7 @@ function Home() {
                   <span className="text-lg">{'\u2192'}</span>
                 </div>
               </div>
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -325,11 +362,18 @@ function Home() {
               { icon: '\u{2728}', label: 'AI Effects', desc: 'Gemini powered' },
               { icon: '\u{1F680}', label: 'Deploy', desc: 'Netlify & GitHub' },
             ].map((f, i) => (
-              <div key={i} className="bg-white/[0.04] backdrop-blur-sm rounded-2xl p-5 border border-white/[0.06] text-center hover:bg-white/[0.08] transition-colors">
+              <motion.div
+                key={i}
+                className="bg-white/[0.04] backdrop-blur-sm rounded-2xl p-5 border border-white/[0.06] text-center hover:bg-white/[0.08] transition-colors"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.5, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+              >
                 <div className="text-2xl mb-2">{f.icon}</div>
                 <div className="text-sm font-semibold text-white mb-1">{f.label}</div>
                 <div className="text-xs text-gray-500">{f.desc}</div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
