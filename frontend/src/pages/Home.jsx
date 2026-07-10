@@ -9,8 +9,10 @@ function Home() {
   const navigate = useNavigate()
   const { t } = useLang()
   const [bursting, setBursting] = useState(false)
+  const [burstKey, setBurstKey] = useState(0)
   const triggerBurst = useCallback(() => {
-    if (bursting) return // prevent re-trigger during animation
+    if (bursting) return
+    setBurstKey(k => k + 1)
     setBursting(true)
     setTimeout(() => setBursting(false), 1800)
   }, [bursting])
@@ -114,7 +116,7 @@ function Home() {
           CORE ENERGY
         </div>
         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/10 text-[9px] font-mono text-gray-400/80 whitespace-nowrap pointer-events-none">
-          click to morph ✨
+          click to burst ✨
         </div>
         {/* Transparent click capture layer */}
         <div
@@ -122,6 +124,29 @@ function Home() {
           onPointerDown={triggerBurst}
         />
       </div>
+
+      {/* Full-screen burst overlay - shockwave rings from core */}
+      {bursting && (
+        <div key={`burst-${burstKey}`} className="fixed inset-0 pointer-events-none" style={{ zIndex: 9999 }}>
+          <div className="absolute inset-0 animate-[burstFlash_0.8s_ease-out_forwards]" style={{
+            background: 'radial-gradient(circle at 10% 85%, rgba(255,255,255,0.9) 0%, rgba(236,72,153,0.6) 8%, rgba(168,85,247,0.3) 20%, transparent 40%)',
+          }} />
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="absolute" style={{ left: '130px', bottom: '130px', transform: 'translate(-50%, 50%)' }}>
+              <div
+                className="rounded-full animate-[burstRing_1s_ease-out_forwards]"
+                style={{
+                  border: `${3 - i}px solid ${['rgba(255,255,255,0.9)', 'rgba(236,72,153,0.8)', 'rgba(168,85,247,0.7)', 'rgba(99,102,241,0.5)'][i]}`,
+                  animationDelay: `${i * 0.12}s`,
+                  width: '10px',
+                  height: '10px',
+                  boxShadow: `0 0 ${15 - i * 3}px ${i === 0 ? 'rgba(255,255,255,0.7)' : 'rgba(168,85,247,0.4)'}`,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       <Navbar />
 
@@ -422,6 +447,15 @@ function Home() {
           52% { transform: translateY(-1px); color: rgba(251,191,36,0.9); }
           60% { transform: translateY(0); color: rgba(244,114,182,0.7); }
           100% { transform: translateY(0); color: rgba(244,114,182,0.7); }
+        }
+        @keyframes burstFlash {
+          0% { opacity: 1; transform: scale(0.3); }
+          40% { opacity: 0.9; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.5); }
+        }
+        @keyframes burstRing {
+          0% { width: 10px; height: 10px; opacity: 1; }
+          100% { width: 450px; height: 450px; opacity: 0; }
         }
       `}</style>
     </div>
