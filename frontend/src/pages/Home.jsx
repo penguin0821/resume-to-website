@@ -71,21 +71,22 @@ function Home() {
           className="absolute inset-0"
           style={{ width: '100%', height: '100%' }}
         />
-        {/* Orb - noise-distorted glowing sphere */}
-        <Orb
-          hue={0}
-          hoverIntensity={0.3}
-          rotateOnHover={true}
-          backgroundColor="#0a0118"
-          className="absolute inset-[50px]"
-          style={{ width: '160px', height: '160px' }}
-        />
+        {/* Orb - noise-distorted glowing sphere (click-through to MagicRings) */}
+        <div className="absolute inset-[50px] pointer-events-none">
+          <Orb
+            hue={0}
+            hoverIntensity={0.3}
+            rotateOnHover={true}
+            backgroundColor="#0a0118"
+            className="w-[160px] h-[160px]"
+          />
+        </div>
         {/* Data labels */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite]">
           CORE ENERGY
         </div>
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-pink-500/20 text-[9px] font-mono text-pink-400/80 whitespace-nowrap">
-          {'{'}power: 24%{'}'}
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/10 text-[9px] font-mono text-gray-400/80 whitespace-nowrap">
+          click to burst ✨
         </div>
       </div>
 
