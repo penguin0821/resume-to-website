@@ -5,6 +5,8 @@ import Navbar from '../components/Navbar'
 import ResumeForm from '../components/ResumeForm'
 import MetaBalls from '../components/reactbits/MetaBallsLazy'
 
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
+
 function PersonalForm() {
   const { t, lang } = useLang()
   const navigate = useNavigate()
@@ -259,7 +261,20 @@ function PersonalForm() {
             </div>
           )}
 
-          {/* Step 2: Per-effect color pickers */}
+          {/* Per-effect color pickers */}
+          {(() => {
+            // Warning: check if any active effect has no colors
+            const emptyEffects = effects.filter(eff => {
+              const cols = ec[eff] || []
+              if (eff === 'gradient' || eff === 'splice') return cols.length < 2
+              return cols.length === 0
+            })
+            return emptyEffects.length > 0 ? (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-3">
+                <p className="text-xs text-amber-700">{'\u26A0\uFE0F'} {t.emptyColorWarning || 'Some effects have no colors selected.'}</p>
+              </div>
+            ) : null
+          })()}
           <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">{t.themeColor}</label>
           <p className="text-[10px] text-gray-400 italic mb-3">{t.perEffectColorHint}</p>
 
@@ -485,6 +500,10 @@ function PersonalForm() {
               <input type="file" accept="image/*" className="hidden" onChange={e => {
                 const file = e.target.files[0]
                 if (file) {
+                  if (file.size > MAX_IMAGE_SIZE) {
+                    alert(t.imageTooLarge)
+                    return
+                  }
                   const reader = new FileReader()
                   reader.onload = ev => setStyle(prev => ({ ...prev, bg_image: ev.target.result }))
                   reader.readAsDataURL(file)
@@ -602,7 +621,14 @@ function PersonalForm() {
         section_order: sectionOrder || [],
       }),
     })
-    if (!response.ok) throw new Error('Generation failed')
+    if (!response.ok) {
+      let errMsg = 'Generation failed'
+      try {
+        const errData = await response.json()
+        if (errData.detail) errMsg = errData.detail
+      } catch { /* ignore parse error */ }
+      throw new Error(errMsg)
+    }
     const { html } = await response.json()
     navigate('/preview', { state: { html, mode: 'personal' } })
   }

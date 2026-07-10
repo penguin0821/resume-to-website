@@ -1,14 +1,35 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import Navbar from '../components/Navbar'
 import * as htmlToImage from 'html-to-image'
 
+const PREVIEW_STORAGE_KEY = 'resume-preview-data'
+
 function Preview() {
   const { t } = useLang()
   const location = useLocation()
   const navigate = useNavigate()
-  const { html, mode } = location.state || {}
+
+  // Get data from location.state OR sessionStorage fallback
+  const getStateData = () => {
+    if (location.state?.html) return location.state
+    try {
+      const saved = sessionStorage.getItem(PREVIEW_STORAGE_KEY)
+      if (saved) return JSON.parse(saved)
+    } catch { /* ignore */ }
+    return {}
+  }
+  const { html, mode } = getStateData()
+
+  // Persist to sessionStorage when data arrives via navigation
+  useEffect(() => {
+    if (html && mode) {
+      try {
+        sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify({ html, mode }))
+      } catch { /* quota exceeded - ignore */ }
+    }
+  }, [html, mode])
 
   const title = mode === 'personal' ? t.previewPersonal : t.previewProfessional
 
@@ -167,7 +188,7 @@ function Preview() {
               disabled={screenshotting}
               className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-sm font-medium transition-colors disabled:opacity-50"
             >
-              {screenshotting ? '📸 ...' : '📸 Screenshot'}
+              {screenshotting ? `📸 ${t.screenshotting || '...'}` : `📸 ${t.screenshot || 'Screenshot'}`}
             </button>
           </div>
         </div>
@@ -214,15 +235,20 @@ function Preview() {
 
           {/* Netlify tutorial tip */}
           {deployTab === 'netlify' && (
-            <div className="mb-5 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
-              <p className="text-xs font-semibold text-indigo-700 mb-1">{t.netlifyTipTitle || 'How it works:'}</p>
-              <ol className="text-xs text-indigo-600 space-y-1 list-decimal list-inside">
-                <li>{t.netlifyTip1 || 'Click "Deploy" — your site will be live in seconds'}</li>
-                <li>{t.netlifyTip2 || 'You\'ll get a URL like xxx.netlify.app'}</li>
-                <li>{t.netlifyTip3 || 'To keep it permanently: sign up at netlify.com and "claim" the site (free)'}</li>
-                <li>{t.netlifyTip4 || 'Optional: connect a custom domain like yourname.com'}</li>
-              </ol>
-            </div>
+            <>
+              <div className="mb-5 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                <p className="text-xs font-semibold text-indigo-700 mb-1">{t.netlifyTipTitle || 'How it works:'}</p>
+                <ol className="text-xs text-indigo-600 space-y-1 list-decimal list-inside">
+                  <li>{t.netlifyTip1 || 'Click "Deploy" — your site will be live in seconds'}</li>
+                  <li>{t.netlifyTip2 || 'You\'ll get a URL like xxx.netlify.app'}</li>
+                  <li>{t.netlifyTip3 || 'To keep it permanently: sign up at netlify.com and "claim" the site (free)'}</li>
+                  <li>{t.netlifyTip4 || 'Optional: connect a custom domain like yourname.com'}</li>
+                </ol>
+              </div>
+              <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-xs text-amber-700">{'\u26A0\uFE0F'} {t.netlifyExpiryWarning || 'Note: Anonymous Netlify sites expire after 24 hours.'}</p>
+              </div>
+            </>
           )}
 
           {/* GitHub fields */}

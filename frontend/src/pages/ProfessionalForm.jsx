@@ -5,6 +5,8 @@ import Navbar from '../components/Navbar'
 import ResumeForm from '../components/ResumeForm'
 import ElectricBorder from '../components/reactbits/ElectricBorder'
 
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
+
 function ProfessionalForm() {
   const { t, lang } = useLang()
   const navigate = useNavigate()
@@ -229,6 +231,10 @@ function ProfessionalForm() {
                     <input type="file" accept="image/*" className="hidden" onChange={e => {
                       const file = e.target.files[0]
                       if (file) {
+                        if (file.size > MAX_IMAGE_SIZE) {
+                          alert(t.imageTooLarge)
+                          return
+                        }
                         const reader = new FileReader()
                         reader.onload = ev => setProStyle(prev => ({ ...prev, header_image: ev.target.result }))
                         reader.readAsDataURL(file)
@@ -323,7 +329,14 @@ function ProfessionalForm() {
         section_order: sectionOrder || [],
       }),
     })
-    if (!response.ok) throw new Error('Generation failed')
+    if (!response.ok) {
+      let errMsg = 'Generation failed'
+      try {
+        const errData = await response.json()
+        if (errData.detail) errMsg = errData.detail
+      } catch { /* ignore parse error */ }
+      throw new Error(errMsg)
+    }
     const { html } = await response.json()
     navigate('/preview', { state: { html, mode: 'professional' } })
   }

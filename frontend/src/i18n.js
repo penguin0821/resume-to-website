@@ -298,6 +298,22 @@ export const translations = {
     otherPlatformsNote: "all free. Just download the HTML and upload.",
     githubTokenPh: "Your GitHub Personal Access Token",
     repoNamePh: "Repository name (e.g. my-resume-site)",
+
+    // Screenshot
+    screenshot: "Screenshot",
+    screenshotting: "Capturing...",
+
+    // Netlify expiry warning
+    netlifyExpiryWarning: "Note: Anonymous Netlify sites expire after 24 hours. To keep your site permanently, sign up at netlify.com and claim it (free).",
+
+    // Image size warning
+    imageTooLarge: "Image is too large (max 2MB). Please compress or use a smaller image.",
+
+    // Unsaved changes
+    unsavedChangesWarning: "You have unsaved changes. Are you sure you want to leave?",
+
+    // Empty color warning
+    emptyColorWarning: "This effect is enabled but has no colors selected. It may not render correctly.",
   },
   zh: {
     // Navbar
@@ -598,5 +614,21 @@ export const translations = {
     otherPlatformsNote: "\u5747\u514d\u8d39\uff0c\u4e0b\u8f7d HTML \u540e\u4e0a\u4f20\u5373\u53ef\u3002",
     githubTokenPh: "\u4f60\u7684 GitHub Personal Access Token",
     repoNamePh: "\u4ed3\u5e93\u540d\uff08\u4f8b\u5982 my-resume-site\uff09",
+
+    // Screenshot
+    screenshot: "\u622a\u56fe",
+    screenshotting: "\u622a\u56fe\u4e2d...",
+
+    // Netlify expiry warning
+    netlifyExpiryWarning: "\u6ce8\u610f\uff1a\u533f\u540d Netlify \u7ad9\u70b9 24 \u5c0f\u65f6\u540e\u8fc7\u671f\u3002\u8981\u6c38\u4e45\u4fdd\u7559\uff0c\u8bf7\u5728 netlify.com \u514d\u8d39\u6ce8\u518c\u5e76\u8ba4\u9886\u7ad9\u70b9\u3002",
+
+    // Image size warning
+    imageTooLarge: "\u56fe\u7247\u592a\u5927\uff08\u6700\u5927 2MB\uff09\uff0c\u8bf7\u538b\u7f29\u6216\u4f7f\u7528\u66f4\u5c0f\u7684\u56fe\u7247\u3002",
+
+    // Unsaved changes
+    unsavedChangesWarning: "\u4f60\u6709\u672a\u4fdd\u5b58\u7684\u66f4\u6539\uff0c\u786e\u5b9a\u8981\u79bb\u5f00\u5417\uff1f",
+
+    // Empty color warning
+    emptyColorWarning: "\u6b64\u6548\u679c\u5df2\u542f\u7528\u4f46\u672a\u9009\u62e9\u989c\u8272\uff0c\u53ef\u80fd\u65e0\u6cd5\u6b63\u5e38\u663e\u793a\u3002",
   },
 };

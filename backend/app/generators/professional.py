@@ -1,6 +1,30 @@
+import html as _html_mod
+from urllib.parse import urlparse
 from typing import Optional
 from app.models import ResumeData, ProfessionalStyle
 from app.generators.i18n import TOGGLE_SCRIPT, TOGGLE_BUTTON, t
+
+
+def _escape(text: str) -> str:
+    """Escape HTML special characters in user-provided text."""
+    if not text:
+        return ''
+    return _html_mod.escape(str(text))
+
+
+def _sanitize_url(url: str) -> str:
+    """Validate URL protocol - only allow http/https/data:image."""
+    if not url:
+        return ''
+    if url.startswith('data:image/'):
+        return url
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme in ('http', 'https'):
+            return url
+    except Exception:
+        pass
+    return ''
 
 
 def _is_light_bg(hex_color: str) -> bool:
@@ -90,24 +114,25 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
     timeline_style = getattr(style, 'timeline_style', 'alternate') if style else 'alternate'
     section_order = getattr(style, 'section_order', []) if style else []
 
-    name_en = resume.name
-    name_cn = resume.name_cn or resume.name
-    title_en = resume.title
-    title_cn = resume.title_cn or resume.title
-    bio_en = resume.bio
-    bio_cn = resume.bio_cn or resume.bio
+    name_en = _escape(resume.name)
+    name_cn = _escape(resume.name_cn or resume.name)
+    title_en = _escape(resume.title)
+    title_cn = _escape(resume.title_cn or resume.title)
+    bio_en = _escape(resume.bio)
+    bio_cn = _escape(resume.bio_cn or resume.bio)
 
     contact_items = []
     if resume.email:
-        contact_items.append(resume.email)
+        contact_items.append(_escape(resume.email))
     if resume.phone:
-        contact_items.append(resume.phone)
+        contact_items.append(_escape(resume.phone))
     contact_html = " &nbsp;&nbsp;|&nbsp;&nbsp; ".join(contact_items)
 
     def _avatar(name, size=100):
-        if resume.avatar_url:
-            return f'<img src="{resume.avatar_url}" alt="avatar" style="width:{size}px;height:{size}px;border-radius:50%;object-fit:cover;border:3px solid {accent};" />'
-        initial = name[0] if name else ""
+        safe_url = _sanitize_url(resume.avatar_url)
+        if safe_url:
+            return f'<img src="{safe_url}" alt="avatar" style="width:{size}px;height:{size}px;border-radius:50%;object-fit:cover;border:3px solid {accent};" />'
+        initial = _escape(name[0]) if name else ''
         return f'<div style="width:{size}px;height:{size}px;border-radius:50%;background:{header_bg};display:flex;align-items:center;justify-content:center;color:{accent};font-size:{int(size*0.4)}px;font-weight:300;border:3px solid {accent};">{initial}</div>'
 
     def _build_work(lang_code, compact=False):
@@ -116,10 +141,10 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
         label = t("professional_experience")[0] if lang_code == "en" else t("professional_experience")[1]
         items = ""
         for idx, exp in enumerate(resume.work_experiences):
-            pos = exp.position if lang_code == "en" else (exp.position_cn or exp.position)
-            comp = exp.company if lang_code == "en" else (exp.company_cn or exp.company)
-            dur = exp.duration if lang_code == "en" else (exp.duration_cn or exp.duration)
-            desc = exp.description if lang_code == "en" else (exp.description_cn or exp.description)
+            pos = _escape(exp.position if lang_code == "en" else (exp.position_cn or exp.position))
+            comp = _escape(exp.company if lang_code == "en" else (exp.company_cn or exp.company))
+            dur = _escape(exp.duration if lang_code == "en" else (exp.duration_cn or exp.duration))
+            desc = _escape(exp.description if lang_code == "en" else (exp.description_cn or exp.description))
             # Alternating timeline: even items left, odd items right
             is_right = idx % 2 == 0
             if compact or len(resume.work_experiences) < 2 or timeline_style != 'alternate':
@@ -172,10 +197,11 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
         label = t("education")[0] if lang_code == "en" else t("education")[1]
         items = ""
         for edu in resume.educations:
-            school = edu.school if lang_code == "en" else (edu.school_cn or edu.school)
-            major = edu.major if lang_code == "en" else (edu.major_cn or edu.major)
-            dur = edu.duration if lang_code == "en" else (edu.duration_cn or edu.duration)
-            logo_html = f'<img src="{edu.school_logo}" alt="logo" style="width:36px;height:36px;object-fit:contain;border-radius:6px;margin-right:12px;flex-shrink:0;" />' if edu.school_logo else ''
+            school = _escape(edu.school if lang_code == "en" else (edu.school_cn or edu.school))
+            major = _escape(edu.major if lang_code == "en" else (edu.major_cn or edu.major))
+            dur = _escape(edu.duration if lang_code == "en" else (edu.duration_cn or edu.duration))
+            safe_logo = _sanitize_url(edu.school_logo)
+            logo_html = f'<img src="{safe_logo}" alt="logo" style="width:36px;height:36px;object-fit:contain;border-radius:6px;margin-right:12px;flex-shrink:0;" />' if safe_logo else ''
             items += f'''
             <div style="display:flex;justify-content:space-between;align-items:center;padding:{12 if compact else 16}px 0;border-bottom:1px solid #f0f0f0;">
                 <div style="display:flex;align-items:center;">
@@ -201,6 +227,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
         bar_bg = 'rgba(255,255,255,0.15)' if dark else '#e8e8e8'
         heading_color = accent if dark else section_color
         for i, s in enumerate(skill_list):
+            s = _escape(s)
             # Width: first skills wider, last ones slightly shorter for visual interest
             width = min(100, 60 + (total - i) * 6) if total > 1 else 80
             bars += f'''
@@ -221,7 +248,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
         label = t("interests")[0] if lang_code == "en" else t("interests")[1]
         h_color = '#aaa' if dark else '#666'
         heading_color = accent if dark else section_color
-        items = " &nbsp;&middot;&nbsp; ".join(f'<span style="color:{h_color};">{h}</span>' for h in hobby_list)
+        items = " &nbsp;&middot;&nbsp; ".join(f'<span style="color:{h_color};">{_escape(h)}</span>' for h in hobby_list)
         return f'<section style="margin-bottom:{40 if dark else 56}px;"><h2 style="font-size:{12 if dark else 14}px;letter-spacing:{2 if dark else 3}px;color:{heading_color};margin-bottom:16px;font-weight:600;">{label}</h2><p style="font-size:14px;line-height:1.8;">{items}</p></section>'
 
     def _build_full_page(lang_code):
@@ -271,9 +298,9 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
             # Contact list for sidebar (vertical)
             sidebar_contact = ""
             if resume.email:
-                sidebar_contact += f'<div style="font-size:12px;color:#888;margin-bottom:6px;">&#x2709; {resume.email}</div>'
+                sidebar_contact += f'<div style="font-size:12px;color:#888;margin-bottom:6px;">&#x2709; {_escape(resume.email)}</div>'
             if resume.phone:
-                sidebar_contact += f'<div style="font-size:12px;color:#888;margin-bottom:6px;">&#x1F4DE; {resume.phone}</div>'
+                sidebar_contact += f'<div style="font-size:12px;color:#888;margin-bottom:6px;">&#x1F4DE; {_escape(resume.phone)}</div>'
 
             sidebar_html = f'''
             <aside style="width:280px;flex-shrink:0;background:{header_bg};color:white;padding:40px 24px;min-height:100vh;">
@@ -308,23 +335,37 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
         elif content_layout == 'poster':
             # Banner background: header_image if available, else gradient
             if header_image:
-                banner_bg = f"background:url('{header_image}') center/cover no-repeat, linear-gradient(135deg, {header_bg}, {accent}40);"
+                safe_hi = _sanitize_url(header_image)
+                banner_bg = f"background:url('{safe_hi}') center/cover no-repeat, linear-gradient(135deg, {header_bg}, {accent}40);" if safe_hi else f"background:linear-gradient(135deg, {header_bg}, {accent}40);"
             elif resume.avatar_url:
-                banner_bg = f"background:url('{resume.avatar_url}') center/cover no-repeat;"
+                safe_av = _sanitize_url(resume.avatar_url)
+                banner_bg = f"background:url('{safe_av}') center/cover no-repeat;" if safe_av else f"background:linear-gradient(135deg, {header_bg} 0%, {header_bg}dd 60%, {accent}30 100%);"
             else:
                 banner_bg = f"background:linear-gradient(135deg, {header_bg} 0%, {header_bg}dd 60%, {accent}30 100%);"
 
             # Avatar circle (larger, overlaps banner bottom)
             if resume.avatar_url:
-                poster_avatar = (
-                    f'<div style="position:absolute;bottom:-55px;left:40px;z-index:2;">'
-                    f'<img src="{resume.avatar_url}" alt="avatar" '
-                    f'style="width:120px;height:120px;border-radius:50%;object-fit:cover;'
-                    f'border:4px solid {body_bg};box-shadow:0 4px 16px rgba(0,0,0,0.2);" />'
-                    f'</div>'
-                )
+                poster_safe_url = _sanitize_url(resume.avatar_url)
+                if poster_safe_url:
+                    poster_avatar = (
+                        f'<div style="position:absolute;bottom:-55px;left:40px;z-index:2;">'
+                        f'<img src="{poster_safe_url}" alt="avatar" '
+                        f'style="width:120px;height:120px;border-radius:50%;object-fit:cover;'
+                        f'border:4px solid {body_bg};box-shadow:0 4px 16px rgba(0,0,0,0.2);" />'
+                        f'</div>'
+                    )
+                else:
+                    initial = _escape(name[0]) if name else ''
+                    poster_avatar = (
+                        f'<div style="position:absolute;bottom:-55px;left:40px;z-index:2;">'
+                        f'<div style="width:120px;height:120px;border-radius:50%;'
+                        f'background:{header_bg};display:flex;align-items:center;justify-content:center;'
+                        f'color:{accent};font-size:48px;font-weight:300;'
+                        f'border:4px solid {body_bg};box-shadow:0 4px 16px rgba(0,0,0,0.2);">{initial}</div>'
+                        f'</div>'
+                    )
             else:
-                initial = name[0] if name else ""
+                initial = _escape(name[0]) if name else ''
                 poster_avatar = (
                     f'<div style="position:absolute;bottom:-55px;left:40px;z-index:2;">'
                     f'<div style="width:120px;height:120px;border-radius:50%;'

@@ -1,6 +1,30 @@
+import html as _html_mod
+from urllib.parse import urlparse
 from typing import Optional
 from app.models import ResumeData, PersonalStyle
 from app.generators.i18n import TOGGLE_SCRIPT, TOGGLE_BUTTON, t
+
+
+def _escape(text: str) -> str:
+    """Escape HTML special characters in user-provided text."""
+    if not text:
+        return ''
+    return _html_mod.escape(str(text))
+
+
+def _sanitize_url(url: str) -> str:
+    """Validate URL protocol - only allow http/https/data:image."""
+    if not url:
+        return ''
+    if url.startswith('data:image/'):
+        return url
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme in ('http', 'https'):
+            return url
+    except Exception:
+        pass
+    return ''
 
 
 STYLE_PRESETS = {
@@ -331,9 +355,10 @@ def _get_style_config(style: Optional[PersonalStyle] = None):
 
 
 def _render_avatar(resume: ResumeData, name: str) -> str:
-    if resume.avatar_url:
-        return f'<img src="{resume.avatar_url}" alt="avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid white;" />'
-    initial = name[0] if name else "?"
+    safe_url = _sanitize_url(resume.avatar_url)
+    if safe_url:
+        return f'<img src="{safe_url}" alt="avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid white;" />'
+    initial = _escape(name[0]) if name else '?'
     return f'<div style="width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:white;font-size:48px;font-weight:bold;border:4px solid white;">{initial}</div>'
 
 
@@ -425,25 +450,26 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             tag_styles_list.append(f"background:{c};color:white;border-radius:50px;padding:10px 24px;")
 
     # If bg_image is set, override body_bg
-    if bg_image:
-        body_bg_css = f"url('{bg_image}') center/cover no-repeat fixed"
+    safe_bg_image = _sanitize_url(bg_image)
+    if safe_bg_image:
+        body_bg_css = f"url('{safe_bg_image}') center/cover no-repeat fixed"
     elif extra_body_css:
         body_bg_css = body_bg  # dot pattern applied via CSS
     else:
         body_bg_css = body_bg
 
-    name_en = resume.name
-    name_cn = resume.name_cn or resume.name
-    title_en = resume.title
-    title_cn = resume.title_cn or resume.title
-    bio_en = resume.bio
-    bio_cn = resume.bio_cn or resume.bio
+    name_en = _escape(resume.name)
+    name_cn = _escape(resume.name_cn or resume.name)
+    title_en = _escape(resume.title)
+    title_cn = _escape(resume.title_cn or resume.title)
+    bio_en = _escape(resume.bio)
+    bio_cn = _escape(resume.bio_cn or resume.bio)
 
     contact_items = []
     if resume.email:
-        contact_items.append(f'<span>&#x2709;&#xFE0F; {resume.email}</span>')
+        contact_items.append(f'<span>&#x2709;&#xFE0F; {_escape(resume.email)}</span>')
     if resume.phone:
-        contact_items.append(f'<span>&#x1F4DE; {resume.phone}</span>')
+        contact_items.append(f'<span>&#x1F4DE; {_escape(resume.phone)}</span>')
     contact_html = " &nbsp;|&nbsp; ".join(contact_items) if contact_items else ""
 
     avatar_en = _render_avatar(resume, name_en)
@@ -457,10 +483,10 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
         items = ""
         total = len(resume.work_experiences)
         for idx, exp in enumerate(resume.work_experiences):
-            pos = exp.position if lang_code == "en" else (exp.position_cn or exp.position)
-            comp = exp.company if lang_code == "en" else (exp.company_cn or exp.company)
-            dur = exp.duration if lang_code == "en" else (exp.duration_cn or exp.duration)
-            desc = exp.description if lang_code == "en" else (exp.description_cn or exp.description)
+            pos = _escape(exp.position if lang_code == "en" else (exp.position_cn or exp.position))
+            comp = _escape(exp.company if lang_code == "en" else (exp.company_cn or exp.company))
+            dur = _escape(exp.duration if lang_code == "en" else (exp.duration_cn or exp.duration))
+            desc = _escape(exp.description if lang_code == "en" else (exp.description_cn or exp.description))
             # Alternating timeline for 2+ items
             if total >= 2 and timeline_style == 'alternate':
                 is_right = idx % 2 == 0
@@ -517,10 +543,11 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
         total = len(resume.educations)
         items = ""
         for edu in resume.educations:
-            school = edu.school if lang_code == "en" else (edu.school_cn or edu.school)
-            major = edu.major if lang_code == "en" else (edu.major_cn or edu.major)
-            dur = edu.duration if lang_code == "en" else (edu.duration_cn or edu.duration)
-            logo_html = f'<img src="{edu.school_logo}" alt="logo" style="width:40px;height:40px;object-fit:contain;border-radius:8px;margin-bottom:8px;" />' if edu.school_logo else ''
+            school = _escape(edu.school if lang_code == "en" else (edu.school_cn or edu.school))
+            major = _escape(edu.major if lang_code == "en" else (edu.major_cn or edu.major))
+            dur = _escape(edu.duration if lang_code == "en" else (edu.duration_cn or edu.duration))
+            safe_logo = _sanitize_url(edu.school_logo)
+            logo_html = f'<img src="{safe_logo}" alt="logo" style="width:40px;height:40px;object-fit:contain;border-radius:8px;margin-bottom:8px;" />' if safe_logo else ''
             items += f'''
             <div style="background:{card_bg};padding:24px;border-radius:{br};box-shadow:{cs};border:{card_border};">
                 {logo_html}
@@ -544,6 +571,7 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
         bars = ""
         total = len(skill_list)
         for i, s in enumerate(skill_list):
+            s = _escape(s)
             # Width: varies for visual interest (70-98%)
             width = 70 + ((i * 7) % 29)
             # Cycle through tag colors for bar color
@@ -579,7 +607,7 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             c = hobby_color_list[i % len(hobby_color_list)]
             hobby_styles.append(f"background:white;border:2px solid {c};color:{c};border-radius:50px;padding:10px 24px;")
         tags = "".join(
-            f'<span style="display:inline-block;{hobby_styles[i]}margin:6px;">{h}</span>'
+            f'<span style="display:inline-block;{hobby_styles[i]}margin:6px;">{_escape(h)}</span>'
             for i, h in enumerate(hobby_list)
         )
         return f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:24px;">{decor} {label}</h2><div style="display:flex;flex-wrap:wrap;gap:4px;">{tags}</div></section>'

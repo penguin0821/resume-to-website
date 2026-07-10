@@ -1,24 +1,25 @@
 """AI Service - Generate CSS/JS visual effects from text descriptions using Gemini API."""
 import os
 import re
+import threading
 import google.generativeai as genai
 from typing import Optional
 
-# Initialize Gemini client
-_api_key = os.environ.get("GEMINI_API_KEY", "")
-if _api_key:
-    genai.configure(api_key=_api_key)
+# Default API key from environment (optional - users provide their own)
+_default_api_key = os.environ.get("GEMINI_API_KEY", "")
 
-_model = None
+# Thread-local storage to avoid global race conditions
+_thread_local = threading.local()
 
 
-def _get_model():
-    global _model
-    if _model is None:
-        if not _api_key:
-            raise ValueError("GEMINI_API_KEY not set. Get one at https://aistudio.google.com/apikey")
-        _model = genai.GenerativeModel("gemini-1.5-flash")
-    return _model
+def _get_model_for_key(api_key: str):
+    """Create a GenerativeModel with the given API key (thread-safe).
+    
+    Users provide their own API key. We configure per-call to avoid
+    global state race conditions in concurrent scenarios.
+    """
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel("gemini-1.5-flash")
 
 
 SYSTEM_PROMPT = """You are a frontend effects generator. The user will describe a visual effect they want for their personal website.
@@ -145,20 +146,16 @@ def generate_effects(description: str, api_key: Optional[str] = None) -> dict:
     
     Args:
         description: User's text description of desired effect
-        api_key: Optional API key override
+        api_key: User's Gemini API key (required)
         
     Returns:
         dict with keys: css (str), js (str), description (str)
     """
-    key = api_key or _api_key
+    key = api_key or _default_api_key
     if not key:
-        raise ValueError("No Gemini API key provided")
+        raise ValueError("No Gemini API key provided. Please paste your API key.")
     
-    if api_key and api_key != _api_key:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-    else:
-        model = _get_model()
+    model = _get_model_for_key(key)
     
     prompt = f"{SYSTEM_PROMPT}\n\nUser request: {description}\n\nReturn ONLY the JSON object:"
     
@@ -252,15 +249,11 @@ def generate_style_chat(message: str, api_key: Optional[str] = None, mode: str =
     """Process a style chat message and return AI suggestions."""
     import json
     
-    key = api_key or _api_key
+    key = api_key or _default_api_key
     if not key:
-        raise ValueError("No Gemini API key provided")
+        raise ValueError("No Gemini API key provided. Please paste your API key.")
     
-    if api_key and api_key != _api_key:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-    else:
-        model = _get_model()
+    model = _get_model_for_key(key)
     
     system = STYLE_CHAT_PROMPT.format(
         current_style=json.dumps(current_style or {}, ensure_ascii=False),

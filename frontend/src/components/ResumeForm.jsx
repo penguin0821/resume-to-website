@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLang } from '../LanguageContext'
 import SectionOrder from './SectionOrder'
 import AIChatPanel from './AIChatPanel'
+
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
 
 function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFromAI }) {
   const { t, lang } = useLang()
@@ -19,14 +21,33 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
   const [hobbyCnInput, setHobbyCnInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [isDirty, setIsDirty] = useState(false)
+
+  // beforeunload: warn user about unsaved changes
+  useEffect(() => {
+    const handler = (e) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  // Mark form as dirty on any input change
+  const markDirty = useCallback(() => {
+    if (!isDirty) setIsDirty(true)
+  }, [isDirty])
 
   // AI Effects state
   const [aiEffects, setAiEffects] = useState([])
   const [sectionOrder, setSectionOrder] = useState([])
 
-  const updateField = (field, value) => setResume(prev => ({ ...prev, [field]: value }))
+  const updateField = (field, value) => { markDirty(); setResume(prev => ({ ...prev, [field]: value })) }
 
   const updateWork = (index, field, value) => {
+    markDirty()
     const updated = [...resume.work_experiences]
     updated[index] = { ...updated[index], [field]: value }
     setResume(prev => ({ ...prev, work_experiences: updated }))
@@ -35,6 +56,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
   const removeWork = (index) => setResume(prev => ({ ...prev, work_experiences: prev.work_experiences.filter((_, i) => i !== index) }))
 
   const updateEdu = (index, field, value) => {
+    markDirty()
     const updated = [...resume.educations]
     updated[index] = { ...updated[index], [field]: value }
     setResume(prev => ({ ...prev, educations: updated }))
@@ -42,13 +64,13 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
   const addEdu = () => setResume(prev => ({ ...prev, educations: [...prev.educations, { school: '', major: '', duration: '', school_cn: '', major_cn: '', duration_cn: '', school_logo: '' }] }))
   const removeEdu = (index) => setResume(prev => ({ ...prev, educations: prev.educations.filter((_, i) => i !== index) }))
 
-  const addSkill = () => { if (skillInput.trim()) { setResume(prev => ({ ...prev, skills: [...prev.skills, skillInput.trim()] })); setSkillInput('') } }
-  const addSkillCn = () => { if (skillCnInput.trim()) { setResume(prev => ({ ...prev, skills_cn: [...prev.skills_cn, skillCnInput.trim()] })); setSkillCnInput('') } }
+  const addSkill = () => { if (skillInput.trim()) { markDirty(); setResume(prev => ({ ...prev, skills: [...prev.skills, skillInput.trim()] })); setSkillInput('') } }
+  const addSkillCn = () => { if (skillCnInput.trim()) { markDirty(); setResume(prev => ({ ...prev, skills_cn: [...prev.skills_cn, skillCnInput.trim()] })); setSkillCnInput('') } }
   const removeSkill = (index) => setResume(prev => ({ ...prev, skills: prev.skills.filter((_, i) => i !== index) }))
   const removeSkillCn = (index) => setResume(prev => ({ ...prev, skills_cn: prev.skills_cn.filter((_, i) => i !== index) }))
 
-  const addHobby = () => { if (hobbyInput.trim()) { setResume(prev => ({ ...prev, hobbies: [...prev.hobbies, hobbyInput.trim()] })); setHobbyInput('') } }
-  const addHobbyCn = () => { if (hobbyCnInput.trim()) { setResume(prev => ({ ...prev, hobbies_cn: [...prev.hobbies_cn, hobbyCnInput.trim()] })); setHobbyCnInput('') } }
+  const addHobby = () => { if (hobbyInput.trim()) { markDirty(); setResume(prev => ({ ...prev, hobbies: [...prev.hobbies, hobbyInput.trim()] })); setHobbyInput('') } }
+  const addHobbyCn = () => { if (hobbyCnInput.trim()) { markDirty(); setResume(prev => ({ ...prev, hobbies_cn: [...prev.hobbies_cn, hobbyCnInput.trim()] })); setHobbyCnInput('') } }
   const removeHobby = (index) => setResume(prev => ({ ...prev, hobbies: prev.hobbies.filter((_, i) => i !== index) }))
   const removeHobbyCn = (index) => setResume(prev => ({ ...prev, hobbies_cn: prev.hobbies_cn.filter((_, i) => i !== index) }))
 
@@ -66,6 +88,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     setSubmitError('')
     try {
       await onSubmit(resume, aiEffects, sectionOrder)
+      setIsDirty(false) // Reset dirty after successful submit
     } catch (err) {
       setSubmitError(err.message || 'Generation failed. Please try again.')
     } finally {
@@ -144,6 +167,10 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files[0]
                   if (file) {
+                    if (file.size > MAX_IMAGE_SIZE) {
+                      setSubmitError(t.imageTooLarge)
+                      return
+                    }
                     const reader = new FileReader()
                     reader.onload = ev => updateField('avatar_url', ev.target.result)
                     reader.readAsDataURL(file)
@@ -273,10 +300,14 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
                 <img src={edu.school_logo} alt="school logo" className="w-10 h-10 object-contain rounded-lg border border-gray-200" />
               )}
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors text-xs font-medium">
-                {'\u{1F393}'} {t.schoolLogo || 'School Logo'} {t.upload || '上传'}
+                {'\u{1F393}'} {t.schoolLogo || 'School Logo'} {t.upload || '\u4e0a\u4f20'}
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files[0]
                   if (file) {
+                    if (file.size > MAX_IMAGE_SIZE) {
+                      setSubmitError(t.imageTooLarge)
+                      return
+                    }
                     const reader = new FileReader()
                     reader.onload = ev => updateEdu(i, 'school_logo', ev.target.result)
                     reader.readAsDataURL(file)
