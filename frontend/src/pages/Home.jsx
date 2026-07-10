@@ -11,7 +11,6 @@ function Home() {
   const [burstKey, setBurstKey] = useState(0)
   const [bursting, setBursting] = useState(false)
   const triggerBurst = useCallback((e) => {
-    console.log('🔥 BURST TRIGGERED!', e?.type, e?.target?.tagName)
     setBurstKey(k => k + 1)
     setBursting(true)
     setTimeout(() => setBursting(false), 800)
@@ -61,7 +60,7 @@ function Home() {
       </div>
 
       {/* Cyber Energy Core v3 — WebGL Orb + MagicRings */}
-      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] z-[5]">
+      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] z-[15]">
         {/* MagicRings - expanding concentric rings (pointer-events-none so clicks pass through) */}
         <div className="absolute inset-0 pointer-events-none">
           <MagicRings
@@ -130,14 +129,6 @@ function Home() {
           ))}
         </div>
       )}
-
-      {/* TEST: burst button (top-right corner for debugging) */}
-      <button
-        className="hidden lg:block fixed top-4 right-4 z-[99999] px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm shadow-lg hover:bg-red-500 active:bg-red-700 transition-colors"
-        onPointerDown={triggerBurst}
-      >
-        💥 TEST BURST
-      </button>
 
       <Navbar />
 
