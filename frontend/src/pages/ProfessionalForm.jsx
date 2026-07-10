@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
+import { API_BASE_URL } from '../config'
 import Navbar from '../components/Navbar'
 import ResumeForm from '../components/ResumeForm'
 import ElectricBorder from '../components/reactbits/ElectricBorder'
@@ -317,7 +318,7 @@ function ProfessionalForm() {
   }
 
   const handleSubmit = async (resumeData, aiEffects, sectionOrder) => {
-    const response = await fetch('/api/generate', {
+    const response = await fetch(`${API_BASE_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

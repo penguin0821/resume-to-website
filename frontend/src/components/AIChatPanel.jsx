@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLang } from '../LanguageContext'
+import { API_BASE_URL } from '../config'
 
 function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
   const { t } = useLang()
@@ -23,7 +24,7 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
     setLoading(true)
 
     try {
-      const resp = await fetch('/api/ai-style-chat', {
+      const resp = await fetch(`${API_BASE_URL}/api/ai-style-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

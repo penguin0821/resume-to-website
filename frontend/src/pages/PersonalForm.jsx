@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
+import { API_BASE_URL } from '../config'
 import Navbar from '../components/Navbar'
 import ResumeForm from '../components/ResumeForm'
 import MetaBalls from '../components/reactbits/MetaBallsLazy'
@@ -609,7 +610,7 @@ function PersonalForm() {
       extra_colors: ec.accent || ec.shadow || [],
       section_order: sectionOrder || [],
     }
-    const response = await fetch('/api/generate', {
+    const response = await fetch(`${API_BASE_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

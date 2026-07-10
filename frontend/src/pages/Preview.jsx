@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
+import { API_BASE_URL } from '../config'
 import Navbar from '../components/Navbar'
 import * as htmlToImage from 'html-to-image'
 
@@ -61,7 +62,7 @@ function Preview() {
     setDeployError('')
     setDeployUrl('')
     try {
-      const resp = await fetch('/api/deploy/netlify', {
+      const resp = await fetch(`${API_BASE_URL}/api/deploy/netlify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html }),
@@ -88,7 +89,7 @@ function Preview() {
     setDeployError('')
     setDeployUrl('')
     try {
-      const resp = await fetch('/api/deploy/github-pages', {
+      const resp = await fetch(`${API_BASE_URL}/api/deploy/github-pages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
