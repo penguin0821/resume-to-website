@@ -113,7 +113,7 @@ function Home() {
         />
         {/* Data labels */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite] pointer-events-none">
-          CORE ENERGY
+          ENERGY CORE
         </div>
         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/10 text-[9px] font-mono text-gray-400/80 whitespace-nowrap pointer-events-none">
           click to burst ✨
