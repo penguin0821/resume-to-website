@@ -8,10 +8,12 @@ import MagicRings from '../components/reactbits/MagicRingsLazy'
 function Home() {
   const navigate = useNavigate()
   const { t } = useLang()
-  const [flash, setFlash] = useState(false)
+  const [burstKey, setBurstKey] = useState(0)
+  const [bursting, setBursting] = useState(false)
   const triggerBurst = useCallback(() => {
-    setFlash(true)
-    setTimeout(() => setFlash(false), 400)
+    setBurstKey(k => k + 1)
+    setBursting(true)
+    setTimeout(() => setBursting(false), 800)
   }, [])
 
   return (
@@ -78,9 +80,28 @@ function Home() {
           style={{ width: '100%', height: '100%' }}
         />
         {/* Burst flash overlay */}
-        <div className={`absolute inset-0 rounded-full pointer-events-none transition-opacity duration-300 ${flash ? 'opacity-100' : 'opacity-0'}`} style={{
-          background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(236,72,153,0.6) 30%, rgba(168,85,247,0.3) 50%, transparent 70%)',
-        }} />
+        {bursting && (
+          <div key={burstKey} className="absolute inset-0 pointer-events-none z-50">
+            {/* Central white flash */}
+            <div className="absolute inset-0 rounded-full animate-[burstFlash_0.6s_ease-out_forwards]" style={{
+              background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(236,72,153,0.7) 25%, rgba(168,85,247,0.4) 50%, transparent 70%)',
+            }} />
+            {/* Expanding shockwave rings */}
+            {[0, 1, 2].map(i => (
+              <div key={i} className="absolute inset-0 flex items-center justify-center">
+                <div
+                  className="rounded-full border-2 animate-[burstRing_0.8s_ease-out_forwards]"
+                  style={{
+                    borderColor: i === 0 ? 'rgba(255,255,255,0.9)' : i === 1 ? 'rgba(236,72,153,0.8)' : 'rgba(168,85,247,0.7)',
+                    animationDelay: `${i * 0.1}s`,
+                    width: '10px',
+                    height: '10px',
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
         {/* Orb - noise-distorted glowing sphere (click-through to MagicRings) */}
         <div className="absolute inset-[50px] pointer-events-none">
           <Orb
@@ -399,6 +420,15 @@ function Home() {
           52% { transform: translateY(-1px); color: rgba(251,191,36,0.9); }
           60% { transform: translateY(0); color: rgba(244,114,182,0.7); }
           100% { transform: translateY(0); color: rgba(244,114,182,0.7); }
+        }
+        @keyframes burstFlash {
+          0% { opacity: 1; transform: scale(0.5); }
+          30% { opacity: 1; transform: scale(1.2); }
+          100% { opacity: 0; transform: scale(1.8); }
+        }
+        @keyframes burstRing {
+          0% { width: 10px; height: 10px; opacity: 1; border-width: 3px; }
+          100% { width: 280px; height: 280px; opacity: 0; border-width: 0.5px; }
         }
       `}</style>
     </div>
