@@ -421,7 +421,7 @@ function ProfessionalForm() {
       <Navbar />
       <main className="relative z-10 max-w-3xl mx-auto px-6 py-10">
         {/* ElectricBorder - floating status card with lightning border */}
-        <div className="hidden lg:block fixed top-32 right-8 w-[160px] z-0 opacity-[0.5]">
+        <div className="hidden lg:block fixed top-[35%] right-[15%] w-[160px] z-0 opacity-[0.6]">
           <ElectricBorder color="#1e40af" speed={0.8} chaos={0.08} borderRadius={12}>
             <div className="p-4 bg-white/60 backdrop-blur-sm rounded-xl">
               <div className="flex items-center gap-2 mb-2">
