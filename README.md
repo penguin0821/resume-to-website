@@ -18,7 +18,7 @@ Resume-to-Website 是一个全栈 Web 应用，帮助用户将简历信息快速
 
 - 两种网站风格：个性创意 / 职业精英
 - 表单录入简历信息（工作经历、教育背景、技能、爱好）
-- 头像上传（支持本地上传 + URL 链接）
+- 头像上传（支持本地上传 + URL 链接，2MB 大小限制）
 - 背景图片上传（个性创意模式）
 - 4 种 UI 风格预设：卡通风、极简风、艺术风、复古风
 - **多效果组合颜色系统**：纯色 / 渐变 / 阴影 / 点缀 / 拼接，支持多效果叠加（如渐变+阴影、拼接+点缀）
@@ -26,23 +26,33 @@ Resume-to-Website 是一个全栈 Web 应用，帮助用户将简历信息快速
 - **点缀布局模式**：均匀 / 随机（随机布局每次生成不同效果）
 - **拼接模式**：横向 / 斜向方向 + 间隔重复（如红蓝红蓝红蓝）
 - 职业精英风支持 3 种 UI 预设：优雅 / 极简 / 商务，可自定义点缀色和头部背景
-- AI 特效（基于 Gemini API，用户自主申请 Key）
-- 一键部署到 GitHub Pages / Netlify
+- 职业精英风支持 3 种内容布局：经典 / 海报 / 侧边栏
+- **AI 风格助手**：通过 Gemini API 对话调整设计风格（用户自主申请 Key）
+- **AI 特效**：基于 Gemini API 生成动态 CSS/JS 特效，含安全清洗机制
+- **拖拽板块排序**：自定义简历各板块的展示顺序
+- **网站截图下载**：预览页一键截图保存为 PNG（基于 html-to-image）
+- **预览持久化**：预览数据存入 sessionStorage，刷新页面不丢失
+- **安全防护**：所有用户输入 HTML 转义（XSS 防护）+ URL 协议清洗
+- 一键部署到 GitHub Pages / Netlify（匿名部署，24h 过期）
 - 中英双语界面（前端应用 + 生成网站均支持 EN/CN 切换）
 - 双语网站生成（可分别填写中英文内容，一键切换）
 - 动态添加多条工作经历 / 教育经历
 - 多标签技能 & 爱好输入
 - 预览生成结果 + 下载 HTML 文件
+- **3D 动态首页**：MetaBalls、粒子场、能量核心、魔法环等 WebGL 动效
 
 ## 技术栈
 
 | 层级 | 技术 |
 |------|------|
-| 前端框架 | React 19 + Vite |
+| 前端框架 | React 19 + Vite 8 |
 | UI 样式 | Tailwind CSS 4 |
-| 路由 | React Router DOM |
-| 后端框架 | Python FastAPI |
-| 数据校验 | Pydantic |
+| 路由 | React Router DOM v7 |
+| 3D 动效 | Three.js + OGL + Motion |
+| 截图 | html-to-image |
+| 后端框架 | Python FastAPI + Uvicorn |
+| 数据校验 | Pydantic v2 |
+| AI 服务 | Google Generative AI (Gemini 1.5 Flash) |
 | 双语方案 | React Context + 自定义 i18n |
 
 ## 本地运行
@@ -65,7 +75,7 @@ cd resume-to-website
 cd backend
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
-pip install fastapi uvicorn[standard]
+pip install fastapi uvicorn[standard] google-generativeai
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -79,7 +89,7 @@ npm run dev
 
 ### 4. 打开浏览器
 
-访问终端中显示的地址（通常是 `http://localhost:5173`）。
+访问 `http://localhost:3000`（Vite 配置固定端口 3000）。
 
 ## 项目结构
 
@@ -104,12 +114,19 @@ resume-to-website/
 │       ├── LanguageContext.jsx     # 语言状态管理
 │       ├── components/
 │       │   ├── Navbar.jsx          # 导航栏（含 EN/CN 切换按钮）
-│       │   └── ResumeForm.jsx      # 简历表单（核心组件）
+│       │   ├── ResumeForm.jsx      # 简历表单（核心组件）
+│       │   ├── AIChatPanel.jsx     # AI 风格助手面板
+│       │   ├── SectionOrder.jsx    # 拖拽板块排序
+│       │   └── reactbits/          # 3D WebGL 动效组件
+│       │       ├── MetaBalls.jsx        # 元球特效
+│       │       ├── MagicRings.jsx       # 魔法环特效
+│       │       ├── Orb.jsx              # 能量核心特效
+│       │       └── ElectricBorder.jsx   # 电光边框特效
 │       └── pages/
 │           ├── Home.jsx            # 首页（风格选择）
 │           ├── PersonalForm.jsx    # 个性创意表单
 │           ├── ProfessionalForm.jsx# 职业精英表单
-│           └── Preview.jsx         # 预览 & 下载页
+│           └── Preview.jsx         # 预览 & 截图 & 部署页
 └── README.md
 ```
 
