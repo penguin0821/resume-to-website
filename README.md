@@ -75,7 +75,7 @@ cd resume-to-website
 cd backend
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
-pip install fastapi uvicorn[standard] google-generativeai
+pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
