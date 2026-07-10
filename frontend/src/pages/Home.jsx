@@ -49,6 +49,39 @@ function Home() {
         ))}
       </div>
 
+      {/* Cyber Energy Core (inspired by MiniMax AT-Field) */}
+      <div className="hidden lg:block absolute left-8 bottom-24 w-[160px] h-[160px] pointer-events-none z-[5]">
+        {/* Morphing outer shell */}
+        <div className="absolute inset-0 animate-[coreMorph_10s_ease-in-out_infinite]" style={{
+          background: 'conic-gradient(from 0deg, rgba(168,85,247,0.25), rgba(236,72,153,0.2), rgba(249,115,22,0.15), rgba(59,130,246,0.2), rgba(168,85,247,0.25))',
+          filter: 'blur(2px)',
+        }} />
+        {/* Outer rotating ring */}
+        <div className="absolute inset-2 rounded-full border border-purple-400/20 animate-[coreSpin_8s_linear_infinite]">
+          <div className="absolute top-0 left-1/2 w-1.5 h-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-400/60" />
+          <div className="absolute bottom-0 left-1/2 w-1 h-1 -translate-x-1/2 translate-y-1/2 rounded-full bg-pink-400/50" />
+        </div>
+        {/* Middle ring (counter-rotate) */}
+        <div className="absolute inset-6 rounded-full border border-pink-400/15 animate-[coreSpin_6s_linear_infinite_reverse]">
+          <div className="absolute top-1/2 right-0 w-1 h-1 translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-400/60" />
+        </div>
+        {/* Inner ring */}
+        <div className="absolute inset-10 rounded-full border border-blue-400/20 animate-[coreSpin_4s_linear_infinite]" />
+        {/* Glowing core */}
+        <div className="absolute inset-[52px] rounded-full animate-[corePulse_3s_ease-in-out_infinite]"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.5), rgba(236,72,153,0.3), transparent)' }} />
+        {/* Cross-hair lines */}
+        <div className="absolute top-1/2 left-2 right-2 h-px bg-gradient-to-r from-transparent via-purple-400/15 to-transparent" />
+        <div className="absolute left-1/2 top-2 bottom-2 w-px bg-gradient-to-b from-transparent via-purple-400/15 to-transparent" />
+        {/* Data labels */}
+        <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/30 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/70 whitespace-nowrap animate-[flicker_4s_steps(1)_infinite]">
+          AT-FIELD 96.6%
+        </div>
+        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/30 backdrop-blur-sm rounded border border-pink-500/20 text-[8px] font-mono text-pink-400/70 whitespace-nowrap animate-[flicker_5s_steps(1)_infinite_1s]">
+          SYNC 24.0%
+        </div>
+      </div>
+
       <Navbar />
 
       <main className="relative z-10">
@@ -266,6 +299,20 @@ function Home() {
           30% { opacity: 0.4; }
           50% { opacity: 1; }
           70% { opacity: 0.6; }
+        }
+        @keyframes coreSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes corePulse {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.3); opacity: 0.4; }
+        }
+        @keyframes coreMorph {
+          0%, 100% { clip-path: polygon(50% 2%, 88% 18%, 98% 55%, 80% 92%, 45% 98%, 8% 78%, 2% 40%, 18% 10%); transform: rotate(0deg) scale(1); }
+          25% { clip-path: polygon(50% 5%, 85% 25%, 95% 60%, 75% 95%, 40% 95%, 10% 75%, 5% 35%, 20% 8%); transform: rotate(15deg) scale(1.05); }
+          50% { clip-path: polygon(45% 0%, 90% 20%, 100% 50%, 85% 85%, 50% 100%, 15% 85%, 0% 50%, 12% 18%); transform: rotate(-10deg) scale(0.95); }
+          75% { clip-path: polygon(55% 3%, 92% 22%, 97% 58%, 78% 90%, 42% 97%, 7% 80%, 3% 42%, 15% 12%); transform: rotate(-20deg) scale(1.08); }
         }
       `}</style>
     </div>
