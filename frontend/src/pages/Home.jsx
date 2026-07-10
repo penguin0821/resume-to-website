@@ -49,36 +49,75 @@ function Home() {
         ))}
       </div>
 
-      {/* Cyber Energy Core (inspired by MiniMax AT-Field) */}
-      <div className="hidden lg:block absolute left-8 bottom-24 w-[160px] h-[160px] pointer-events-none z-[5]">
-        {/* Morphing outer shell */}
-        <div className="absolute inset-0 animate-[coreMorph_10s_ease-in-out_infinite]" style={{
-          background: 'conic-gradient(from 0deg, rgba(168,85,247,0.25), rgba(236,72,153,0.2), rgba(249,115,22,0.15), rgba(59,130,246,0.2), rgba(168,85,247,0.25))',
+      {/* Cyber Energy Core v2 — Quiet → Explosion → Quiet */}
+      <div className="hidden lg:flex absolute left-6 bottom-16 w-[240px] h-[240px] pointer-events-none z-[5] items-center justify-center">
+
+        {/* === Layer 1: 3 irregular wave rings emanating outward === */}
+        {/* Ring 1 - largest, slowest */}
+        <div className="absolute w-[220px] h-[220px] animate-[coreRingBurst_8s_ease-in-out_infinite]" style={{
+          background: 'conic-gradient(from 30deg, rgba(168,85,247,0.35), rgba(236,72,153,0.3), rgba(249,115,22,0.2), rgba(236,72,153,0.35), rgba(168,85,247,0.35))',
+          clipPath: 'polygon(50% 0%, 72% 8%, 92% 22%, 100% 48%, 95% 72%, 78% 95%, 52% 100%, 28% 92%, 8% 75%, 0% 50%, 5% 25%, 22% 8%)',
+          filter: 'blur(3px)',
+        }} />
+        {/* Ring 2 - medium, offset delay */}
+        <div className="absolute w-[180px] h-[180px] animate-[coreRingBurst_8s_ease-in-out_infinite_0.4s]" style={{
+          background: 'conic-gradient(from 180deg, rgba(236,72,153,0.4), rgba(168,85,247,0.35), rgba(59,130,246,0.25), rgba(168,85,247,0.4), rgba(236,72,153,0.35))',
+          clipPath: 'polygon(48% 2%, 75% 10%, 95% 30%, 98% 55%, 88% 80%, 65% 97%, 38% 98%, 15% 82%, 3% 58%, 2% 32%, 18% 12%)',
           filter: 'blur(2px)',
         }} />
-        {/* Outer rotating ring */}
-        <div className="absolute inset-2 rounded-full border border-purple-400/20 animate-[coreSpin_8s_linear_infinite]">
-          <div className="absolute top-0 left-1/2 w-1.5 h-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-400/60" />
-          <div className="absolute bottom-0 left-1/2 w-1 h-1 -translate-x-1/2 translate-y-1/2 rounded-full bg-pink-400/50" />
+        {/* Ring 3 - inner, fastest */}
+        <div className="absolute w-[140px] h-[140px] animate-[coreRingBurst_8s_ease-in-out_infinite_0.8s]" style={{
+          background: 'conic-gradient(from 90deg, rgba(249,115,22,0.35), rgba(236,72,153,0.45), rgba(168,85,247,0.4), rgba(236,72,153,0.4), rgba(249,115,22,0.35))',
+          clipPath: 'polygon(50% 3%, 78% 12%, 97% 38%, 95% 65%, 78% 92%, 50% 97%, 22% 90%, 5% 68%, 3% 38%, 20% 12%)',
+          filter: 'blur(1.5px)',
+        }} />
+
+        {/* === Layer 2: Spikes / thorns radiating from center === */}
+        <svg className="absolute w-[200px] h-[200px] animate-[coreSpin_30s_linear_infinite]" viewBox="0 0 200 200">
+          {[...Array(12)].map((_, i) => {
+            const angle = (i * 30) * Math.PI / 180;
+            const baseLen = 30 + (i % 3) * 8;
+            const x1 = 100 + Math.cos(angle) * 28;
+            const y1 = 100 + Math.sin(angle) * 28;
+            const x2 = 100 + Math.cos(angle) * baseLen;
+            const y2 = 100 + Math.sin(angle) * baseLen;
+            const perp = angle + Math.PI / 2;
+            const hw = 2 + (i % 2);
+            return (
+              <polygon key={i}
+                points={`${x1 + Math.cos(perp)*hw},${y1 + Math.sin(perp)*hw} ${x2},${y2} ${x1 - Math.cos(perp)*hw},${y1 - Math.sin(perp)*hw}`}
+                fill={i % 3 === 0 ? 'rgba(168,85,247,0.4)' : i % 3 === 1 ? 'rgba(236,72,153,0.35)' : 'rgba(249,115,22,0.3)'}
+                className="animate-[spikeGrow_8s_ease-in-out_infinite]"
+                style={{ animationDelay: `${i * 0.08}s` }} />
+            );
+          })}
+        </svg>
+
+        {/* === Layer 3: Explosion flash (white/pink burst at peak) === */}
+        <div className="absolute w-[100px] h-[100px] rounded-full animate-[coreFlash_8s_ease-in-out_infinite]"
+          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.9), rgba(236,72,153,0.6), rgba(168,85,247,0.3), transparent)' }} />
+
+        {/* === Layer 4: Solid core sphere === */}
+        <div className="absolute w-[56px] h-[56px] rounded-full animate-[coreBreathe_8s_ease-in-out_infinite]" style={{
+          background: 'radial-gradient(circle at 35% 35%, #c084fc, #a855f7, #7c3aed, #4c1d95)',
+          boxShadow: '0 0 20px 4px rgba(168,85,247,0.4), 0 0 60px 8px rgba(236,72,153,0.2), inset 0 -4px 8px rgba(0,0,0,0.3)',
+        }} />
+        {/* Core highlight */}
+        <div className="absolute w-[20px] h-[20px] rounded-full top-[62px] left-[82px] animate-[coreBreathe_8s_ease-in-out_infinite]"
+          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.6), transparent)' }} />
+
+        {/* === Layer 5: Horizontal scan texture lines === */}
+        <div className="absolute inset-0 animate-[coreScanTex_8s_ease-in-out_infinite]" style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(168,85,247,0.06) 4px, rgba(168,85,247,0.06) 5px)',
+          clipPath: 'circle(110px at 50% 50%)',
+        }} />
+
+        {/* === Data labels === */}
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/80 whitespace-nowrap animate-[flicker_3s_steps(1)_infinite]">
+          CORE ENERGY
         </div>
-        {/* Middle ring (counter-rotate) */}
-        <div className="absolute inset-6 rounded-full border border-pink-400/15 animate-[coreSpin_6s_linear_infinite_reverse]">
-          <div className="absolute top-1/2 right-0 w-1 h-1 translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-400/60" />
-        </div>
-        {/* Inner ring */}
-        <div className="absolute inset-10 rounded-full border border-blue-400/20 animate-[coreSpin_4s_linear_infinite]" />
-        {/* Glowing core */}
-        <div className="absolute inset-[52px] rounded-full animate-[corePulse_3s_ease-in-out_infinite]"
-          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.5), rgba(236,72,153,0.3), transparent)' }} />
-        {/* Cross-hair lines */}
-        <div className="absolute top-1/2 left-2 right-2 h-px bg-gradient-to-r from-transparent via-purple-400/15 to-transparent" />
-        <div className="absolute left-1/2 top-2 bottom-2 w-px bg-gradient-to-b from-transparent via-purple-400/15 to-transparent" />
-        {/* Data labels */}
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/30 backdrop-blur-sm rounded border border-purple-500/20 text-[8px] font-mono text-purple-400/70 whitespace-nowrap animate-[flicker_4s_steps(1)_infinite]">
-          AT-FIELD 96.6%
-        </div>
-        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/30 backdrop-blur-sm rounded border border-pink-500/20 text-[8px] font-mono text-pink-400/70 whitespace-nowrap animate-[flicker_5s_steps(1)_infinite_1s]">
-          SYNC 24.0%
+        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-pink-500/20 text-[9px] font-mono text-pink-400/80 whitespace-nowrap animate-[coreNumJump_8s_ease-in-out_infinite]">
+          {'{'}power: 24%{'}'}
         </div>
       </div>
 
@@ -304,15 +343,50 @@ function Home() {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        @keyframes corePulse {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(1.3); opacity: 0.4; }
+        /* 8s cycle: 0-25% quiet, 25-45% build-up, 45-55% PEAK, 55-80% recede, 80-100% quiet */
+        @keyframes coreRingBurst {
+          0%, 20% { transform: scale(0.55) rotate(0deg); opacity: 0.25; }
+          40% { transform: scale(0.85) rotate(5deg); opacity: 0.6; }
+          50% { transform: scale(1.15) rotate(8deg); opacity: 0.95; }
+          55% { transform: scale(1.2) rotate(6deg); opacity: 0.9; }
+          75% { transform: scale(0.7) rotate(-3deg); opacity: 0.35; }
+          100% { transform: scale(0.55) rotate(0deg); opacity: 0.25; }
         }
-        @keyframes coreMorph {
-          0%, 100% { clip-path: polygon(50% 2%, 88% 18%, 98% 55%, 80% 92%, 45% 98%, 8% 78%, 2% 40%, 18% 10%); transform: rotate(0deg) scale(1); }
-          25% { clip-path: polygon(50% 5%, 85% 25%, 95% 60%, 75% 95%, 40% 95%, 10% 75%, 5% 35%, 20% 8%); transform: rotate(15deg) scale(1.05); }
-          50% { clip-path: polygon(45% 0%, 90% 20%, 100% 50%, 85% 85%, 50% 100%, 15% 85%, 0% 50%, 12% 18%); transform: rotate(-10deg) scale(0.95); }
-          75% { clip-path: polygon(55% 3%, 92% 22%, 97% 58%, 78% 90%, 42% 97%, 7% 80%, 3% 42%, 15% 12%); transform: rotate(-20deg) scale(1.08); }
+        @keyframes spikeGrow {
+          0%, 20% { transform: scaleY(0.3) scaleX(0.8); opacity: 0.15; }
+          42% { transform: scaleY(0.9) scaleX(1); opacity: 0.5; }
+          50% { transform: scaleY(1.6) scaleX(1.1); opacity: 0.8; }
+          58% { transform: scaleY(1.3) scaleX(1.05); opacity: 0.65; }
+          78% { transform: scaleY(0.4) scaleX(0.85); opacity: 0.2; }
+          100% { transform: scaleY(0.3) scaleX(0.8); opacity: 0.15; }
+        }
+        @keyframes coreFlash {
+          0%, 30% { transform: scale(0.3); opacity: 0; }
+          44% { transform: scale(0.6); opacity: 0.3; }
+          50% { transform: scale(1.8); opacity: 0.9; }
+          56% { transform: scale(1.4); opacity: 0.5; }
+          70% { transform: scale(0.4); opacity: 0.05; }
+          100% { transform: scale(0.3); opacity: 0; }
+        }
+        @keyframes coreBreathe {
+          0%, 25% { transform: scale(0.9); box-shadow: 0 0 15px 2px rgba(168,85,247,0.3), 0 0 30px 4px rgba(236,72,153,0.15); }
+          48% { transform: scale(1); box-shadow: 0 0 25px 6px rgba(168,85,247,0.5), 0 0 60px 12px rgba(236,72,153,0.3); }
+          52% { transform: scale(1.08); box-shadow: 0 0 35px 10px rgba(168,85,247,0.7), 0 0 80px 20px rgba(236,72,153,0.4); }
+          75% { transform: scale(0.92); box-shadow: 0 0 15px 3px rgba(168,85,247,0.35), 0 0 35px 6px rgba(236,72,153,0.18); }
+          100% { transform: scale(0.9); box-shadow: 0 0 15px 2px rgba(168,85,247,0.3), 0 0 30px 4px rgba(236,72,153,0.15); }
+        }
+        @keyframes coreScanTex {
+          0%, 25% { opacity: 0.3; }
+          50% { opacity: 1; }
+          75% { opacity: 0.4; }
+          100% { opacity: 0.3; }
+        }
+        @keyframes coreNumJump {
+          0%, 40% { transform: translateY(0); color: rgba(244,114,182,0.7); }
+          48% { transform: translateY(-3px); color: rgba(251,191,36,1); }
+          52% { transform: translateY(-1px); color: rgba(251,191,36,0.9); }
+          60% { transform: translateY(0); color: rgba(244,114,182,0.7); }
+          100% { transform: translateY(0); color: rgba(244,114,182,0.7); }
         }
       `}</style>
     </div>
