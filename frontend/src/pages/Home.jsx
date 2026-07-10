@@ -60,7 +60,7 @@ function Home() {
       </div>
 
       {/* Cyber Energy Core v3 — WebGL Orb + MagicRings */}
-      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] pointer-events-auto z-[5]" onClick={triggerBurst}>
+      <div className="hidden lg:block absolute left-4 bottom-8 w-[260px] h-[260px] pointer-events-auto z-[5] cursor-pointer" onClick={triggerBurst}>
         {/* MagicRings - expanding concentric rings */}
         <MagicRings
           color="#a855f7"
@@ -79,29 +79,6 @@ function Home() {
           className="absolute inset-0"
           style={{ width: '100%', height: '100%' }}
         />
-        {/* Burst flash overlay */}
-        {bursting && (
-          <div key={burstKey} className="absolute inset-0 pointer-events-none z-50">
-            {/* Central white flash */}
-            <div className="absolute inset-0 rounded-full animate-[burstFlash_0.6s_ease-out_forwards]" style={{
-              background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(236,72,153,0.7) 25%, rgba(168,85,247,0.4) 50%, transparent 70%)',
-            }} />
-            {/* Expanding shockwave rings */}
-            {[0, 1, 2].map(i => (
-              <div key={i} className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="rounded-full border-2 animate-[burstRing_0.8s_ease-out_forwards]"
-                  style={{
-                    borderColor: i === 0 ? 'rgba(255,255,255,0.9)' : i === 1 ? 'rgba(236,72,153,0.8)' : 'rgba(168,85,247,0.7)',
-                    animationDelay: `${i * 0.1}s`,
-                    width: '10px',
-                    height: '10px',
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
         {/* Orb - noise-distorted glowing sphere (click-through to MagicRings) */}
         <div className="absolute inset-[50px] pointer-events-none">
           <Orb
@@ -120,6 +97,31 @@ function Home() {
           click to burst ✨
         </div>
       </div>
+
+      {/* Full-screen burst overlay - outside core container to avoid WebGL compositing */}
+      {bursting && (
+        <div key={`burst-${burstKey}`} className="fixed inset-0 pointer-events-none" style={{ zIndex: 9999 }}>
+          {/* Bright central flash */}
+          <div className="absolute inset-0 animate-[burstFlash_0.6s_ease-out_forwards]" style={{
+            background: 'radial-gradient(circle at 10% 85%, rgba(255,255,255,0.95) 0%, rgba(236,72,153,0.7) 10%, rgba(168,85,247,0.4) 25%, transparent 45%)',
+          }} />
+          {/* Expanding shockwave rings from energy core position */}
+          {[0, 1, 2, 3, 4].map(i => (
+            <div key={i} className="absolute" style={{ left: '130px', bottom: '130px', transform: 'translate(-50%, 50%)' }}>
+              <div
+                className="rounded-full animate-[burstRing_0.8s_ease-out_forwards]"
+                style={{
+                  border: `${4 - i}px solid ${i === 0 ? 'rgba(255,255,255,0.95)' : i === 1 ? 'rgba(236,72,153,0.9)' : i === 2 ? 'rgba(168,85,247,0.8)' : i === 3 ? 'rgba(99,102,241,0.7)' : 'rgba(59,130,246,0.6)'}`,
+                  animationDelay: `${i * 0.08}s`,
+                  width: '10px',
+                  height: '10px',
+                  boxShadow: `0 0 ${20 - i * 3}px ${i === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(168,85,247,0.5)'}`,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       <Navbar />
 
@@ -422,13 +424,13 @@ function Home() {
           100% { transform: translateY(0); color: rgba(244,114,182,0.7); }
         }
         @keyframes burstFlash {
-          0% { opacity: 1; transform: scale(0.5); }
-          30% { opacity: 1; transform: scale(1.2); }
-          100% { opacity: 0; transform: scale(1.8); }
+          0% { opacity: 1; transform: scale(0.3); }
+          30% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(2); }
         }
         @keyframes burstRing {
-          0% { width: 10px; height: 10px; opacity: 1; border-width: 3px; }
-          100% { width: 280px; height: 280px; opacity: 0; border-width: 0.5px; }
+          0% { width: 10px; height: 10px; opacity: 1; }
+          100% { width: 500px; height: 500px; opacity: 0; }
         }
       `}</style>
     </div>
