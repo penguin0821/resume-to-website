@@ -6,7 +6,7 @@ from app.models import (
 )
 from app.generators.personal import generate_personal_site
 from app.generators.professional import generate_professional_site
-from app.ai_service import generate_effects, generate_style_chat
+from app.ai_service import generate_effects, generate_style_chat, SUPPORTED_MODELS
 
 router = APIRouter()
 
@@ -40,10 +40,15 @@ def generate_site(request: GenerateRequest):
     return {"html": html, "mode": request.mode}
 
 
+@router.get("/api/ai-models")
+def get_ai_models():
+    return {"models": SUPPORTED_MODELS}
+
+
 @router.post("/api/ai-effects")
 def ai_effects(request: AIEffectRequest):
     try:
-        result = generate_effects(request.description, api_key=request.api_key or None)
+        result = generate_effects(request.description, api_key=request.api_key or None, model=request.model)
         return AIEffectResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -60,6 +65,7 @@ def ai_style_chat(request: AIStyleChatRequest):
             mode=request.mode,
             current_style=request.current_style,
             conversation=request.conversation,
+            model=request.model,
         )
         return AIStyleChatResponse(**result)
     except ValueError as e:

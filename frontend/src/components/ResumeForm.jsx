@@ -27,6 +27,57 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
   const [hasDraft, setHasDraft] = useState(false)
   const draftTimer = useRef(null)
   const isRestoring = useRef(false)
+  const fileInputRef = useRef(null)
+
+  // Export form data as JSON file
+  const exportJSON = useCallback(() => {
+    try {
+      const data = JSON.stringify(resume, null, 2)
+      const blob = new Blob([data], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `resume-data-${resume.name || 'draft'}-${new Date().toISOString().slice(0,10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch { /* ignore */ }
+  }, [resume])
+
+  // Import JSON file to restore form data
+  const importJSON = useCallback((e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result)
+        if (parsed && typeof parsed === 'object' && parsed.name) {
+          // Merge with defaults to handle missing fields
+          setResume(prev => ({
+            ...prev,
+            ...parsed,
+            work_experiences: parsed.work_experiences?.length ? parsed.work_experiences : prev.work_experiences,
+            educations: parsed.educations?.length ? parsed.educations : prev.educations,
+            skills: parsed.skills || [],
+            hobbies: parsed.hobbies || [],
+            skills_cn: parsed.skills_cn || [],
+            hobbies_cn: parsed.hobbies_cn || [],
+          }))
+          markDirty()
+          setIsDirty(true)
+        } else {
+          alert(lang === 'zh' ? '无效的JSON文件：缺少姓名字段' : 'Invalid JSON file: name field is required')
+        }
+      } catch {
+        alert(lang === 'zh' ? 'JSON文件解析失败' : 'Failed to parse JSON file')
+      }
+    }
+    reader.readAsText(file)
+    // Reset file input so the same file can be imported again
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [lang, markDirty])
 
   // Restore draft from localStorage on mount
   useEffect(() => {
@@ -160,6 +211,18 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
           </button>
         </div>
       )}
+      {/* Import / Export */}
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={exportJSON}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">
+          <span>{'\u{1F4E5}'}</span> {lang === 'zh' ? '导出JSON' : 'Export JSON'}
+        </button>
+        <label className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm cursor-pointer">
+          <span>{'\u{1F4E4}'}</span> {lang === 'zh' ? '导入JSON' : 'Import JSON'}
+          <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={importJSON} />
+        </label>
+        <span className="text-[10px] text-gray-400">{lang === 'zh' ? '保存/恢复表单数据' : 'Save or restore form data'}</span>
+      </div>
       {/* Bilingual Toggle */}
       <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl px-6 py-5">
         <div>

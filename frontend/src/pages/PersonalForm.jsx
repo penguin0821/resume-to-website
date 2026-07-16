@@ -29,6 +29,7 @@ function PersonalForm() {
     ui_style: 'cartoon',
     bg_image: '',
     timeline_style: 'alternate',
+    dark_mode: false,
   })
   const [keywordInput, setKeywordInput] = useState('')
 
@@ -520,10 +521,57 @@ function PersonalForm() {
           <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">{t.uiStyle}</label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { value: 'cartoon', emoji: '\u{1F9F8}', desc: '\u6d3b\u6cfc\u53ef\u7231' },
-              { value: 'minimal', emoji: '\u{1F33F}', desc: '\u5e72\u51c0\u7b80\u6d01' },
-              { value: 'artistic', emoji: '\u{1F3A8}', desc: '\u521b\u610f\u4f18\u96c5' },
-              { value: 'retro', emoji: '\u{1F4E0}', desc: '\u590d\u53e4\u6000\u65e7' },
+              { value: 'cartoon', emoji: '\u{1F9F8}', desc: '\u6d3b\u6cfc\u53ef\u7231',
+                preview: (
+                  <div className="w-full h-16 rounded-lg overflow-hidden bg-gradient-to-br from-orange-100 to-yellow-50 border-2 border-orange-300 relative">
+                    <div className="absolute top-1 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-orange-400 border-2 border-white" />
+                    <div className="absolute bottom-1 left-2 right-2 space-y-0.5">
+                      <div className="h-1 bg-orange-300 rounded-full w-3/4" />
+                      <div className="h-1 bg-orange-200 rounded-full w-1/2" />
+                    </div>
+                    <div className="absolute top-1 right-1 text-[6px]">{'\u2728'}</div>
+                  </div>
+                ) },
+              { value: 'minimal', emoji: '\u{1F33F}', desc: '\u5e72\u51c0\u7b80\u6d01',
+                preview: (
+                  <div className="w-full h-16 rounded-lg overflow-hidden bg-white border border-gray-200 relative">
+                    <div className="absolute top-2 left-2 right-2">
+                      <div className="h-0.5 bg-gray-300 w-1/3 mb-1" />
+                      <div className="h-0.5 bg-gray-200 w-1/2" />
+                    </div>
+                    <div className="absolute bottom-2 left-2 right-2 space-y-0.5">
+                      <div className="h-0.5 bg-gray-100 rounded w-full" />
+                      <div className="h-0.5 bg-gray-100 rounded w-2/3" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200" />
+                  </div>
+                ) },
+              { value: 'artistic', emoji: '\u{1F3A8}', desc: '\u521b\u610f\u4f18\u96c5',
+                preview: (
+                  <div className="w-full h-16 rounded-lg overflow-hidden relative" style={{ background: 'linear-gradient(160deg, #1a1a2e, #16213e, #0f3460)' }}>
+                    <div className="absolute top-2 left-2 right-2">
+                      <div className="h-0.5 bg-rose-400 w-1/3 mb-1 opacity-70" />
+                      <div className="h-0.5 bg-white w-1/2 opacity-40" />
+                    </div>
+                    <div className="absolute bottom-1 left-2 right-2">
+                      <div className="h-3 rounded bg-white/10" />
+                    </div>
+                    <div className="absolute top-1 right-1 text-[6px]">{'\u{1F3A8}'}</div>
+                  </div>
+                ) },
+              { value: 'retro', emoji: '\u{1F4E0}', desc: '\u590d\u53e4\u6000\u65e7',
+                preview: (
+                  <div className="w-full h-16 rounded-none overflow-hidden relative" style={{ background: '#f5f0e0', border: '2px solid #2d2d2d' }}>
+                    <div className="h-3 bg-[#2d2d2d] flex items-center px-1">
+                      <div className="h-0.5 bg-yellow-400 w-1/3" />
+                    </div>
+                    <div className="px-1.5 py-1 space-y-0.5">
+                      <div className="h-0.5 bg-[#2d2d2d] w-2/3" />
+                      <div className="h-0.5 bg-[#2d2d2d]/60 w-1/2" />
+                      <div className="h-1.5 mt-1 bg-yellow-400 w-4" style={{ border: '1px solid #2d2d2d' }} />
+                    </div>
+                  </div>
+                ) },
             ].map(s => (
               <button key={s.value} type="button"
                 onClick={() => setStyle(prev => ({ ...prev, ui_style: s.value }))}
@@ -532,7 +580,8 @@ function PersonalForm() {
                     ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200 ring-offset-1'
                     : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-gray-50'
                 }`}>
-                <div className="text-3xl mb-2">{s.emoji}</div>
+                <div className="mb-2">{s.preview}</div>
+                <div className="text-2xl mb-1">{s.emoji}</div>
                 <div className="text-sm font-semibold text-gray-800">{t[s.value]}</div>
                 <div className="text-[10px] text-gray-400 mt-1">{s.desc}</div>
                 {style.ui_style === s.value && (
@@ -593,6 +642,19 @@ function PersonalForm() {
             </button>
           </div>
         </div>
+        {/* Dark Mode Toggle */}
+        <div>
+          <div className="flex items-center justify-between bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl px-6 py-4">
+            <div>
+              <p className="text-sm font-semibold text-white">{lang === 'zh' ? '\u{1F319} \u6697\u8272\u6a21\u5f0f' : '\u{1F319} Dark Mode'}</p>
+              <p className="text-xs text-gray-400 mt-1">{lang === 'zh' ? '\u8bbf\u5ba2\u7cfb\u7edf\u4e3a\u6697\u8272\u6a21\u5f0f\u65f6\u81ea\u52a8\u5207\u6362' : 'Auto-switch when visitor uses dark mode'}</p>
+            </div>
+            <button type="button" onClick={() => setStyle(prev => ({ ...prev, dark_mode: !prev.dark_mode }))}
+              className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ml-4 ${style.dark_mode ? 'bg-indigo-500' : 'bg-gray-600'}`}>
+              <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${style.dark_mode ? 'translate-x-7' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -609,6 +671,7 @@ function PersonalForm() {
       primary_colors: ec.solid || [],
       extra_colors: ec.accent || ec.shadow || [],
       section_order: sectionOrder || [],
+      dark_mode: style.dark_mode || false,
     }
     const response = await fetch(`${API_BASE_URL}/api/generate`, {
       method: 'POST',

@@ -3,13 +3,31 @@ import { useLang } from '../LanguageContext'
 import { API_BASE_URL } from '../config'
 
 function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [showGuide, setShowGuide] = useState(false)
+  const [selectedModel, setSelectedModel] = useState('gemini/gemini-1.5-flash')
+  const [availableModels, setAvailableModels] = useState([])
   const chatEndRef = useRef(null)
+
+  // Fetch available models on mount
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/ai-models`)
+      .then(r => r.json())
+      .then(data => { if (data.models) setAvailableModels(data.models) })
+      .catch(() => {
+        // Fallback if API not reachable
+        setAvailableModels([
+          { id: 'gemini/gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'Google' },
+          { id: 'gemini/gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'Google' },
+          { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
+          { id: 'anthropic/claude-3-haiku-20240307', name: 'Claude 3 Haiku', provider: 'Anthropic' },
+        ])
+      })
+  }, [])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -33,6 +51,7 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
           mode,
           current_style: currentStyle || {},
           conversation: messages.slice(-6),
+          model: selectedModel,
         }),
       })
       const data = await resp.json()
@@ -66,15 +85,36 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
       </h2>
       <p className="text-xs text-gray-400 mb-4 ml-3">{t.aiAssistantDesc || 'Describe the style you want in natural language, AI will adjust your design'}</p>
 
-      {/* API Key */}
+      {/* API Key + Model Selector */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Gemini API Key</label>
+          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{lang === 'zh' ? 'AI\u6a21\u578b' : 'AI Model'}</label>
           <button type="button" onClick={() => setShowGuide(!showGuide)}
-            className="text-[10px] text-purple-500 hover:text-purple-700 underline">
+            className="text-[10px] text-purple-500 hover:text-purple-700 underline ml-auto">
             {showGuide ? '\u25B2' : '\u25BC'} {t.apiKeyGuideTitle || 'How to get?'}
           </button>
         </div>
+        {/* Model selector */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {availableModels.map(m => (
+            <button key={m.id} type="button"
+              onClick={() => setSelectedModel(m.id)}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                selectedModel === m.id
+                  ? 'bg-purple-100 text-purple-700 ring-1 ring-purple-300'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}>
+              <span className="text-[9px] text-gray-400">{m.provider}</span> {m.name}
+            </button>
+          ))}
+        </div>
+        {/* API Key input */}
+        <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+          {(() => {
+            const m = availableModels.find(x => x.id === selectedModel)
+            return m ? `${m.provider} API Key` : 'API Key'
+          })()}
+        </label>
         <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)}
           placeholder={t.apiKeyPh || 'Paste your Gemini API key...'}
           className={`w-full px-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 ${
@@ -89,10 +129,26 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
         {showGuide && (
           <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded-xl">
             <ol className="text-xs text-purple-700 space-y-1">
-              <li>{t.apiKeyStep1 || '1. Visit'} <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="font-semibold underline">Google AI Studio</a></li>
-              <li>{t.apiKeyStep2 || '2. Click "Create API Key"'}</li>
-              <li>{t.apiKeyStep3 || '3. Copy and paste here'}</li>
-              <li>{t.apiKeyStep4 || '4. Free tier available'}</li>
+              {selectedModel.startsWith('gemini') ? (
+                <>
+                  <li>{t.apiKeyStep1 || '1. Visit'} <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="font-semibold underline">Google AI Studio</a></li>
+                  <li>{t.apiKeyStep2 || '2. Click "Create API Key"'}</li>
+                  <li>{t.apiKeyStep3 || '3. Copy and paste here'}</li>
+                  <li>{t.apiKeyStep4 || '4. Free tier available'}</li>
+                </>
+              ) : selectedModel.startsWith('openai') ? (
+                <>
+                  <li>{lang === 'zh' ? '1. \u8bbf\u95ee' : '1. Visit'} <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="font-semibold underline">OpenAI Platform</a></li>
+                  <li>{lang === 'zh' ? '2. \u521b\u5efaAPI Key' : '2. Create API Key'}</li>
+                  <li>{lang === 'zh' ? '3. \u590d\u5236\u7c98\u8d34\u5230\u4e0a\u65b9' : '3. Copy and paste above'}</li>
+                </>
+              ) : (
+                <>
+                  <li>{lang === 'zh' ? '1. \u8bbf\u95ee' : '1. Visit'} <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer" className="font-semibold underline">Anthropic Console</a></li>
+                  <li>{lang === 'zh' ? '2. \u521b\u5efaAPI Key' : '2. Create API Key'}</li>
+                  <li>{lang === 'zh' ? '3. \u590d\u5236\u7c98\u8d34\u5230\u4e0a\u65b9' : '3. Copy and paste above'}</li>
+                </>
+              )}
             </ol>
           </div>
         )}

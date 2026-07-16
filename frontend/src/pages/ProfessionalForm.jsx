@@ -20,6 +20,7 @@ function ProfessionalForm() {
     photo_layout: '',
     header_image: '',
     timeline_style: 'alternate',
+    dark_mode: false,
   })
 
   const extraFields = (
@@ -109,9 +110,46 @@ function ProfessionalForm() {
           <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">{t.proUiStyle}</label>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { value: 'elegant', emoji: '\u{1F451}', desc: t.proElegantDesc, accent: '#c9a96e' },
-              { value: 'minimal', emoji: '\u{1F4F0}', desc: t.proMinimalDesc, accent: '#333' },
-              { value: 'corporate', emoji: '\u{1F3E2}', desc: t.proCorporateDesc, accent: '#1e40af' },
+              { value: 'elegant', emoji: '\u{1F451}', desc: t.proElegantDesc, accent: '#c9a96e',
+                preview: (
+                  <div className="w-full h-16 rounded-lg overflow-hidden relative" style={{ background: '#fafafa' }}>
+                    <div className="h-4" style={{ background: '#1a1a2e' }}>
+                      <div className="h-0.5 mt-1.5 mx-2 bg-[#c9a96e] opacity-60 w-1/3" />
+                    </div>
+                    <div className="px-2 py-1 space-y-0.5">
+                      <div className="h-0.5 bg-gray-300 w-2/3" />
+                      <div className="h-0.5 bg-gray-200 w-1/2" />
+                      <div className="mt-1 h-0.5 bg-[#c9a96e]/40 w-full" />
+                    </div>
+                  </div>
+                ) },
+              { value: 'minimal', emoji: '\u{1F4F0}', desc: t.proMinimalDesc, accent: '#333',
+                preview: (
+                  <div className="w-full h-16 rounded-lg overflow-hidden bg-white border border-gray-200 relative">
+                    <div className="px-2 py-2">
+                      <div className="h-0.5 bg-gray-800 w-1/4 mb-1" />
+                      <div className="h-0.5 bg-gray-400 w-1/3" />
+                    </div>
+                    <div className="px-2 space-y-0.5">
+                      <div className="h-0.5 bg-gray-200 w-full" />
+                      <div className="h-0.5 bg-gray-100 w-3/4" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200" />
+                  </div>
+                ) },
+              { value: 'corporate', emoji: '\u{1F3E2}', desc: t.proCorporateDesc, accent: '#1e40af',
+                preview: (
+                  <div className="w-full h-16 rounded-lg overflow-hidden relative" style={{ background: '#f8fafc' }}>
+                    <div className="h-4" style={{ background: '#0f172a' }}>
+                      <div className="h-0.5 mt-1.5 mx-2 w-1/4" style={{ background: '#1e40af' }} />
+                    </div>
+                    <div className="px-2 py-1 space-y-0.5">
+                      <div className="h-1 rounded-sm bg-white border border-gray-200 w-full" />
+                      <div className="h-0.5 bg-gray-300 w-1/2" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, #1e40af, #3b82f6, #1e40af)' }} />
+                  </div>
+                ) },
             ].map(s => (
               <button key={s.value} type="button"
                 onClick={() => setProStyle(prev => ({
@@ -124,7 +162,8 @@ function ProfessionalForm() {
                     ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
                     : 'border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50'
                 }`}>
-                <div className="text-3xl mb-2">{s.emoji}</div>
+                <div className="mb-2">{s.preview}</div>
+                <div className="text-2xl mb-1">{s.emoji}</div>
                 <div className="text-sm font-semibold text-gray-800">{t[s.value]}</div>
                 <div className="text-[10px] text-gray-400 mt-1">{s.desc}</div>
                 {proStyle.ui_style === s.value && (
@@ -306,6 +345,19 @@ function ProfessionalForm() {
               {proStyle.timeline_style === 'linear' && (
                 <div className="mt-1 text-[10px] font-medium text-gray-600">{'\u2713'}</div>
               )}
+            </button>
+          </div>
+        </div>
+        {/* Dark Mode Toggle */}
+        <div>
+          <div className="flex items-center justify-between bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl px-6 py-4">
+            <div>
+              <p className="text-sm font-semibold text-white">{lang === 'zh' ? '\u{1F319} \u6697\u8272\u6a21\u5f0f' : '\u{1F319} Dark Mode'}</p>
+              <p className="text-xs text-gray-400 mt-1">{lang === 'zh' ? '\u8bbf\u5ba2\u7cfb\u7edf\u4e3a\u6697\u8272\u6a21\u5f0f\u65f6\u81ea\u52a8\u5207\u6362' : 'Auto-switch when visitor uses dark mode'}</p>
+            </div>
+            <button type="button" onClick={() => setProStyle(prev => ({ ...prev, dark_mode: !prev.dark_mode }))}
+              className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ml-4 ${proStyle.dark_mode ? 'bg-indigo-500' : 'bg-gray-600'}`}>
+              <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${proStyle.dark_mode ? 'translate-x-7' : 'translate-x-0.5'}`} />
             </button>
           </div>
         </div>

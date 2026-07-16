@@ -1,30 +1,7 @@
-import html as _html_mod
-from urllib.parse import urlparse
 from typing import Optional
 from app.models import ResumeData, ProfessionalStyle
 from app.generators.i18n import TOGGLE_SCRIPT, TOGGLE_BUTTON, t
-
-
-def _escape(text: str) -> str:
-    """Escape HTML special characters in user-provided text."""
-    if not text:
-        return ''
-    return _html_mod.escape(str(text))
-
-
-def _sanitize_url(url: str) -> str:
-    """Validate URL protocol - only allow http/https/data:image."""
-    if not url:
-        return ''
-    if url.startswith('data:image/'):
-        return url
-    try:
-        parsed = urlparse(url)
-        if parsed.scheme in ('http', 'https'):
-            return url
-    except Exception:
-        pass
-    return ''
+from app.generators.utils import escape_html as _escape, sanitize_url as _sanitize_url
 
 
 def _is_light_bg(hex_color: str) -> bool:
@@ -462,6 +439,32 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
     ai_css = "\n".join(ai_css_parts)
     ai_js = "\n".join(ai_js_parts)
 
+    dark_mode = getattr(style, 'dark_mode', False) if style else False
+    dark_mode_css = ""
+    if dark_mode:
+        dark_mode_css = """
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a2e !important; color: #e0e0e0 !important; }
+            header { filter: brightness(0.85); }
+            h1, h2, h3 { color: #f0f0f0 !important; }
+            p, span { color: inherit; }
+            .rs-sidebar { background: #12122a !important; }
+            .rs-sidebar-wrap > div:last-child {
+                background: #1a1a2e !important;
+            }
+            section > div, [style*="border-bottom:1px solid"] {
+                border-color: #3a3a5e !important;
+            }
+            [style*="background:#ffffff"], [style*="background: #ffffff"],
+            [style*="background:#fafafa"], [style*="background: #fafafa"],
+            [style*="background:#f8fafc"] {
+                background: #2a2a3e !important;
+            }
+            footer { background: #12122a !important; color: #888 !important; }
+            a { color: #8b9cf7 !important; }
+        }
+        """
+
     html = f'''<!DOCTYPE html>
 <html lang="{html_lang}">
 <head>
@@ -510,6 +513,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
             .rs-sidebar-wrap {{ display: block !important; }}
             .rs-sidebar {{ page-break-after: avoid; }}
         }}
+        {dark_mode_css}
         {ai_css}
     </style>
     {script}

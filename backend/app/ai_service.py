@@ -1,25 +1,49 @@
-"""AI Service - Generate CSS/JS visual effects from text descriptions using Gemini API."""
+"""AI Service - Generate CSS/JS visual effects from text descriptions using LiteLLM unified API."""
 import os
 import re
-import threading
-import google.generativeai as genai
+import json
 from typing import Optional
 
+try:
+    import litellm
+    _USE_LITELLM = True
+except ImportError:
+    _USE_LITELLM = False
+    import google.generativeai as genai
+
 # Default API key from environment (optional - users provide their own)
-_default_api_key = os.environ.get("GEMINI_API_KEY", "")
+_default_api_key = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("AI_API_KEY", "")
 
-# Thread-local storage to avoid global race conditions
-_thread_local = threading.local()
+# Supported models for the frontend model selector
+SUPPORTED_MODELS = [
+    {"id": "gemini/gemini-1.5-flash", "name": "Gemini 1.5 Flash", "provider": "Google", "keyEnv": "GEMINI_API_KEY"},
+    {"id": "gemini/gemini-2.0-flash", "name": "Gemini 2.0 Flash", "provider": "Google", "keyEnv": "GEMINI_API_KEY"},
+    {"id": "openai/gpt-4o-mini", "name": "GPT-4o Mini", "provider": "OpenAI", "keyEnv": "OPENAI_API_KEY"},
+    {"id": "openai/gpt-4o", "name": "GPT-4o", "provider": "OpenAI", "keyEnv": "OPENAI_API_KEY"},
+    {"id": "anthropic/claude-3-haiku-20240307", "name": "Claude 3 Haiku", "provider": "Anthropic", "keyEnv": "ANTHROPIC_API_KEY"},
+    {"id": "anthropic/claude-3-5-sonnet-20241022", "name": "Claude 3.5 Sonnet", "provider": "Anthropic", "keyEnv": "ANTHROPIC_API_KEY"},
+]
+
+DEFAULT_MODEL = "gemini/gemini-1.5-flash"
 
 
-def _get_model_for_key(api_key: str):
-    """Create a GenerativeModel with the given API key (thread-safe).
-    
-    Users provide their own API key. We configure per-call to avoid
-    global state race conditions in concurrent scenarios.
-    """
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-1.5-flash")
+def _call_ai(prompt: str, api_key: str, model: str = DEFAULT_MODEL) -> str:
+    """Call AI model via LiteLLM (unified interface) or fallback to Gemini SDK."""
+    if _USE_LITELLM:
+        response = litellm.completion(
+            model=model,
+            api_key=api_key,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=4096,
+        )
+        return response.choices[0].message.content
+    else:
+        # Fallback: use google.generativeai directly (only works for Gemini)
+        genai.configure(api_key=api_key)
+        gm = genai.GenerativeModel("gemini-1.5-flash")
+        resp = gm.generate_content(prompt)
+        return resp.text
 
 
 SYSTEM_PROMPT = """You are a frontend effects generator. The user will describe a visual effect they want for their personal website.
@@ -141,26 +165,23 @@ def _sanitize_ai_js(js: str) -> str:
     return wrapper_prefix + safe_js + wrapper_suffix
 
 
-def generate_effects(description: str, api_key: Optional[str] = None) -> dict:
-    """Generate CSS/JS effects from a text description using Gemini.
+def generate_effects(description: str, api_key: Optional[str] = None, model: str = DEFAULT_MODEL) -> dict:
+    """Generate CSS/JS effects from a text description using AI.
     
     Args:
         description: User's text description of desired effect
-        api_key: User's Gemini API key (required)
+        api_key: User's API key (required)
+        model: LiteLLM model identifier
         
     Returns:
         dict with keys: css (str), js (str), description (str)
     """
     key = api_key or _default_api_key
     if not key:
-        raise ValueError("No Gemini API key provided. Please paste your API key.")
-    
-    model = _get_model_for_key(key)
+        raise ValueError("No API key provided. Please paste your API key.")
     
     prompt = f"{SYSTEM_PROMPT}\n\nUser request: {description}\n\nReturn ONLY the JSON object:"
-    
-    response = model.generate_content(prompt)
-    text = response.text.strip()
+    text = _call_ai(prompt, key, model).strip()
     
     # Remove markdown code blocks if present
     if text.startswith("```"):
@@ -168,7 +189,6 @@ def generate_effects(description: str, api_key: Optional[str] = None) -> dict:
         text = re.sub(r"\s*```$", "", text)
     
     # Parse JSON
-    import json
     try:
         result = json.loads(text)
     except json.JSONDecodeError:
@@ -245,15 +265,12 @@ Mode: {mode}"""
 
 
 def generate_style_chat(message: str, api_key: Optional[str] = None, mode: str = "personal",
-                        current_style: dict = None, conversation: list = None) -> dict:
+                        current_style: dict = None, conversation: list = None,
+                        model: str = DEFAULT_MODEL) -> dict:
     """Process a style chat message and return AI suggestions."""
-    import json
-    
     key = api_key or _default_api_key
     if not key:
-        raise ValueError("No Gemini API key provided. Please paste your API key.")
-    
-    model = _get_model_for_key(key)
+        raise ValueError("No API key provided. Please paste your API key.")
     
     system = STYLE_CHAT_PROMPT.format(
         current_style=json.dumps(current_style or {}, ensure_ascii=False),
@@ -270,8 +287,7 @@ def generate_style_chat(message: str, api_key: Optional[str] = None, mode: str =
     
     prompt = "\n".join(context_parts) + "\n\nRespond ONLY with the JSON object:"
     
-    response = model.generate_content(prompt)
-    text = response.text.strip()
+    text = _call_ai(prompt, key, model).strip()
     
     # Remove markdown code blocks
     if text.startswith("```"):

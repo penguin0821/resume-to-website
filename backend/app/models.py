@@ -59,6 +59,7 @@ class PersonalStyle(BaseModel):
     bg_image: str = ""  # base64 data URL or image URL
     timeline_style: str = "alternate"  # alternate / linear
     section_order: list[str] = []  # e.g. ["bio","education","work","skills","hobbies"]
+    dark_mode: bool = False  # enable dark mode via prefers-color-scheme
 
 
 class ProfessionalStyle(BaseModel):
@@ -72,6 +73,7 @@ class ProfessionalStyle(BaseModel):
     header_image: str = ""  # base64 or URL for poster banner background
     timeline_style: str = "alternate"  # alternate / linear
     section_order: list[str] = []  # e.g. ["bio","education","work","skills","hobbies"]
+    dark_mode: bool = False  # enable dark mode via prefers-color-scheme
 
 
 class GenerateRequest(BaseModel):
@@ -87,6 +89,7 @@ class GenerateRequest(BaseModel):
 class AIEffectRequest(BaseModel):
     description: str
     api_key: str = ""
+    model: str = "gemini/gemini-1.5-flash"
 
 
 class AIEffectResponse(BaseModel):
@@ -101,6 +104,7 @@ class AIStyleChatRequest(BaseModel):
     mode: str = "personal"  # personal or professional
     current_style: dict = {}  # current style parameters
     conversation: list = []  # previous messages [{"role": "user/ai", "content": "..."}]
+    model: str = "gemini/gemini-1.5-flash"  # LiteLLM model identifier
 
 
 class AIStyleChatResponse(BaseModel):
