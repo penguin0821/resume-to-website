@@ -121,6 +121,12 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
     bio_en = _escape(resume.bio)
     bio_cn = _escape(resume.bio_cn or resume.bio)
 
+    # SEO: build meta description and JSON-LD
+    seo_desc = bio_en or f"{name_en} - {title_en}"
+    seo_jsonld = f'{{"@context":"https://schema.org","@type":"Person","name":"{name_en}","jobTitle":"{title_en}","description":"{seo_desc[:160]}"}}'
+    avatar_url_safe = _sanitize_url(resume.avatar_url) if resume.avatar_url else ''
+    og_image_tag = f'<meta property="og:image" content="{avatar_url_safe}">' if avatar_url_safe else ''
+
     contact_items = []
     if resume.email:
         contact_items.append(_escape(resume.email))
@@ -161,8 +167,8 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
                 # Alternating timeline
                 if is_right:
                     items += f'''
-            <div style="display:flex;margin-bottom:32px;">
-                <div style="flex:1;padding-right:28px;text-align:right;">
+            <div class="rs-timeline" style="display:flex;margin-bottom:32px;">
+                <div class="rs-timeline-card" style="flex:1;padding-right:28px;text-align:right;">
                     <h3 style="margin:0 0 2px 0;font-size:18px;color:#1a1a2e;font-weight:600;">{pos}</h3>
                     <p style="margin:0 0 2px 0;color:{accent};font-weight:500;letter-spacing:0.5px;">{comp}</p>
                     <p style="margin:0 0 8px 0;color:#999;font-size:13px;letter-spacing:1px;">{dur}</p>
@@ -176,7 +182,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
             </div>'''
                 else:
                     items += f'''
-            <div style="display:flex;margin-bottom:32px;">
+            <div class="rs-timeline" style="display:flex;margin-bottom:32px;">
                 <div style="flex:1;"></div>
                 <div style="position:relative;width:16px;flex-shrink:0;">
                     <div style="position:absolute;left:50%;top:4px;transform:translateX(-50%);width:14px;height:14px;background:{accent};border-radius:50%;border:3px solid {body_bg};z-index:1;"></div>
@@ -303,7 +309,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
                 sidebar_contact += f'<div style="font-size:12px;color:#888;margin-bottom:6px;">&#x1F4DE; {_escape(resume.phone)}</div>'
 
             sidebar_html = f'''
-            <aside style="width:280px;flex-shrink:0;background:{header_bg};color:white;padding:40px 24px;min-height:100vh;">
+            <aside class="rs-sidebar" style="width:280px;flex-shrink:0;background:{header_bg};color:white;padding:40px 24px;min-height:100vh;">
                 <div style="text-align:center;margin-bottom:24px;">
                     {sidebar_avatar}
                     <h1 style="font-size:20px;margin:16px 0 4px 0;font-weight:600;letter-spacing:1px;">{name}</h1>
@@ -322,7 +328,7 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
             </div>'''
 
             return f'''
-        <div style="display:flex;min-height:100vh;">
+        <div class="rs-sidebar-wrap" style="display:flex;min-height:100vh;">
             {sidebar_html}
             {main_html}
         </div>
@@ -461,6 +467,15 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{seo_desc[:160]}">
+    <meta property="og:title" content="{page_title}">
+    <meta property="og:description" content="{seo_desc[:160]}">
+    <meta property="og:type" content="profile">
+    {og_image_tag}
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{page_title}">
+    <meta name="twitter:description" content="{seo_desc[:160]}">
+    <script type="application/ld+json">{seo_jsonld}</script>
     <title>{page_title}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -471,6 +486,30 @@ def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalS
             line-height: 1.6;
         }}
         {extra_css}
+        @media (max-width: 768px) {{
+            .rs-sidebar-wrap {{ flex-direction: column !important; }}
+            .rs-sidebar {{ width: 100% !important; min-height: auto !important; padding: 24px 20px !important; }}
+            .rs-sidebar-wrap > div:last-child {{ max-width: 100% !important; padding: 24px 15px !important; }}
+            .rs-timeline {{ flex-direction: column !important; }}
+            .rs-timeline > div {{ flex: none !important; padding: 0 !important; text-align: left !important; }}
+            .rs-timeline > div[style*="width:16px"] {{ display: none !important; }}
+            .rs-timeline > div[style*="width:20px"] {{ display: none !important; }}
+            .rs-timeline-card {{ padding: 0 !important; margin-bottom: 16px; }}
+            body {{ font-size: 15px; }}
+            h1 {{ font-size: 24px !important; }}
+            h2 {{ font-size: 18px !important; }}
+            header {{ padding: 24px 15px !important; }}
+            main {{ padding: 24px 15px !important; }}
+            section {{ margin-bottom: 28px !important; }}
+        }}
+        @media print {{
+            body {{ background: white !important; }}
+            header {{ page-break-after: avoid; }}
+            section {{ page-break-inside: avoid; }}
+            footer {{ page-break-before: avoid; }}
+            .rs-sidebar-wrap {{ display: block !important; }}
+            .rs-sidebar {{ page-break-after: avoid; }}
+        }}
         {ai_css}
     </style>
     {script}

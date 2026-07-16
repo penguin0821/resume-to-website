@@ -465,6 +465,12 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
     bio_en = _escape(resume.bio)
     bio_cn = _escape(resume.bio_cn or resume.bio)
 
+    # SEO: build meta description and JSON-LD
+    seo_desc = bio_en or f"{name_en} - {title_en}"
+    seo_jsonld = f'{{"@context":"https://schema.org","@type":"Person","name":"{name_en}","jobTitle":"{title_en}","description":"{seo_desc[:160]}"}}'
+    avatar_url_safe = _sanitize_url(resume.avatar_url) if resume.avatar_url else ''
+    og_image_tag = f'<meta property="og:image" content="{avatar_url_safe}">' if avatar_url_safe else ''
+
     contact_items = []
     if resume.email:
         contact_items.append(f'<span>&#x2709;&#xFE0F; {_escape(resume.email)}</span>')
@@ -493,8 +499,8 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
                 dot_color = tag_styles_list[idx % len(tag_styles_list)].split(';')[0].replace('background:', '') if tag_styles_list else pc
                 if is_right:
                     items += f'''
-                <div style="display:flex;margin-bottom:24px;">
-                    <div style="flex:1;padding-right:24px;text-align:right;">
+                <div class="rs-timeline" style="display:flex;margin-bottom:24px;">
+                    <div class="rs-timeline-card" style="flex:1;padding-right:24px;text-align:right;">
                         <div style="background:{card_bg};padding:20px;border-radius:{br};box-shadow:{cs};border:{card_border};">
                             <h3 style="margin:0 0 4px 0;font-size:18px;color:#1a1a2e;">{pos}</h3>
                             <p style="margin:0 0 4px 0;color:{pc};font-weight:bold;">{comp}</p>
@@ -510,7 +516,7 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
                 </div>'''
                 else:
                     items += f'''
-                <div style="display:flex;margin-bottom:24px;">
+                <div class="rs-timeline" style="display:flex;margin-bottom:24px;">
                     <div style="flex:1;"></div>
                     <div style="position:relative;width:20px;flex-shrink:0;">
                         <div style="position:absolute;left:50%;top:24px;transform:translateX(-50%);width:16px;height:16px;background:{pc};border-radius:50%;border:3px solid white;z-index:1;"></div>
@@ -557,7 +563,7 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
             </div>'''
         # 2-column grid if 2+ items, else single column
         grid_style = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;' if total >= 2 else ''
-        return f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:24px;">{decor} {label}</h2><div style="{grid_style}">{items}</div></section>'
+        return f'<section style="margin-bottom:48px;"><h2 style="{section_title}margin-bottom:24px;">{decor} {label}</h2><div class="rs-edu-grid" style="{grid_style}">{items}</div></section>'
 
     def _build_skills(lang_code):
         if lang_code == "en":
@@ -714,6 +720,15 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{seo_desc[:160]}">
+    <meta property="og:title" content="{page_title}">
+    <meta property="og:description" content="{seo_desc[:160]}">
+    <meta property="og:type" content="profile">
+    {og_image_tag}
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{page_title}">
+    <meta name="twitter:description" content="{seo_desc[:160]}">
+    <script type="application/ld+json">{seo_jsonld}</script>
     <title>{page_title}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -726,6 +741,25 @@ def generate_personal_site(resume: ResumeData, style: Optional[PersonalStyle] = 
         }}
         {extra_css}
         {preset_extra_css}
+        @media (max-width: 768px) {{
+            .rs-timeline {{ flex-direction: column !important; }}
+            .rs-timeline > div {{ flex: none !important; padding: 0 !important; text-align: left !important; }}
+            .rs-timeline > div[style*="width:20px"] {{ display: none !important; }}
+            .rs-timeline-card {{ padding: 0 !important; margin-bottom: 16px; }}
+            .rs-edu-grid {{ grid-template-columns: 1fr !important; }}
+            body {{ font-size: 15px; }}
+            h1 {{ font-size: 28px !important; }}
+            h2 {{ font-size: 20px !important; }}
+            header {{ padding: 30px 15px !important; }}
+            main {{ padding: 24px 15px !important; }}
+            section {{ margin-bottom: 32px !important; }}
+        }}
+        @media print {{
+            body {{ background: white !important; }}
+            header {{ page-break-after: avoid; }}
+            section {{ page-break-inside: avoid; }}
+            footer {{ page-break-before: avoid; }}
+        }}
         {ai_css}
     </style>
     {script}

@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLang } from '../LanguageContext'
 import SectionOrder from './SectionOrder'
 import AIChatPanel from './AIChatPanel'
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
+const DRAFT_DEBOUNCE = 800 // ms
 
 function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFromAI }) {
   const { t, lang } = useLang()
+  const draftKey = `resume-draft-${mode}`
   const [showBilingual, setShowBilingual] = useState(false)
   const [resume, setResume] = useState({
     name: '', title: '', email: '', phone: '', bio: '', avatar_url: '',
@@ -22,6 +24,54 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [isDirty, setIsDirty] = useState(false)
+  const [hasDraft, setHasDraft] = useState(false)
+  const draftTimer = useRef(null)
+  const isRestoring = useRef(false)
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(draftKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && parsed.name) {
+          setHasDraft(true)
+          setResume(parsed)
+          setIsDirty(true)
+          isRestoring.current = true
+        }
+      }
+    } catch { /* ignore corrupt data */ }
+  }, [draftKey])
+
+  // Auto-save draft to localStorage with debounce
+  useEffect(() => {
+    if (isRestoring.current) {
+      isRestoring.current = false
+      return
+    }
+    if (!isDirty) return
+    if (draftTimer.current) clearTimeout(draftTimer.current)
+    draftTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(resume))
+      } catch { /* quota exceeded */ }
+    }, DRAFT_DEBOUNCE)
+    return () => { if (draftTimer.current) clearTimeout(draftTimer.current) }
+  }, [resume, isDirty, draftKey])
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(draftKey)
+    setHasDraft(false)
+    setResume({
+      name: '', title: '', email: '', phone: '', bio: '', avatar_url: '',
+      work_experiences: [{ company: '', position: '', duration: '', description: '', company_cn: '', position_cn: '', duration_cn: '', description_cn: '' }],
+      educations: [{ school: '', major: '', duration: '', school_cn: '', major_cn: '', duration_cn: '', school_logo: '' }],
+      skills: [], hobbies: [],
+      name_cn: '', title_cn: '', bio_cn: '', skills_cn: [], hobbies_cn: [],
+    })
+    setIsDirty(false)
+  }, [draftKey])
 
   // beforeunload: warn user about unsaved changes
   useEffect(() => {
@@ -89,6 +139,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     try {
       await onSubmit(resume, aiEffects, sectionOrder)
       setIsDirty(false) // Reset dirty after successful submit
+      clearDraft() // Remove saved draft after successful generation
     } catch (err) {
       setSubmitError(err.message || 'Generation failed. Please try again.')
     } finally {
@@ -100,6 +151,15 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
 
   return (
     <form onSubmit={handleSubmit} className="space-y-12">
+      {/* Draft restored notice */}
+      {hasDraft && (
+        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-2xl px-6 py-4">
+          <p className="text-sm text-green-700">✨ {lang === 'zh' ? '已自动恢复上次的填写' : 'Your previous draft has been restored'}</p>
+          <button type="button" onClick={clearDraft} className="text-xs text-green-600 hover:text-red-500 underline ml-4 flex-shrink-0">
+            {lang === 'zh' ? '清除草稿' : 'Clear Draft'}
+          </button>
+        </div>
+      )}
       {/* Bilingual Toggle */}
       <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl px-6 py-5">
         <div>
