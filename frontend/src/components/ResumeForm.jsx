@@ -45,6 +45,11 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     } catch { /* ignore */ }
   }, [resume])
 
+  // Mark form as dirty on any input change
+  const markDirty = useCallback(() => {
+    if (!isDirty) setIsDirty(true)
+  }, [isDirty])
+
   // Import JSON file to restore form data
   const importJSON = useCallback((e) => {
     const file = e.target.files?.[0]
@@ -134,11 +139,6 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty])
-
-  // Mark form as dirty on any input change
-  const markDirty = useCallback(() => {
-    if (!isDirty) setIsDirty(true)
   }, [isDirty])
 
   // AI Effects state
@@ -363,7 +363,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
             </div>
             {showBilingual && (
             <div className="mt-5 pt-4 border-t border-amber-200">
-              <p className="text-xs font-semibold text-amber-600 mb-3">{lang === 'zh' ? '中文翻译' : 'Chinese Translation'}</p>
+              <p className="text-xs font-semibold text-amber-600 mb-3">{lang === 'zh' ? '第二语言' : 'Second Language'}</p>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.companyCn}</label>
@@ -444,7 +444,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
             </div>
             {showBilingual && (
             <div className="mt-5 pt-4 border-t border-amber-200">
-              <p className="text-xs font-semibold text-amber-600 mb-3">{lang === 'zh' ? '中文翻译' : 'Chinese Translation'}</p>
+              <p className="text-xs font-semibold text-amber-600 mb-3">{lang === 'zh' ? '第二语言' : 'Second Language'}</p>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1.5">{t.schoolCn}</label>

@@ -45,7 +45,7 @@ function Home() {
     if (bursting) return
     setBurstKey(k => k + 1)
     setBursting(true)
-    setTimeout(() => setBursting(false), 1800)
+    setTimeout(() => setBursting(false), 2200)
   }, [bursting])
 
   return (
@@ -98,12 +98,12 @@ function Home() {
           scale: bursting ? 1.13 : 1,
         }}
         transition={bursting
-          ? { type: 'spring', stiffness: 280, damping: 12, mass: 0.8 }
-          : { type: 'spring', stiffness: 60, damping: 18, mass: 1.2 }
+          ? { type: 'spring', stiffness: 350, damping: 14, mass: 0.6 }
+          : { type: 'spring', stiffness: 80, damping: 15, mass: 1.2 }
         }
       >
         {/* Morph brightness/saturation layer */}
-        <div className={`w-full h-full ${bursting ? 'animate-[morphFilter_1.6s_ease-out]' : ''}`}>
+        <div className={`w-full h-full ${bursting ? 'animate-[morphFilter_2.8s_ease-out]' : ''}`}>
         {/* MagicRings - expanding concentric rings */}
         <div className="absolute inset-0 pointer-events-none">
           <MagicRings
@@ -119,7 +119,7 @@ function Home() {
             opacity={0.9}
             noiseAmount={0.06}
             clickBurst={false}
-            hoverScale={1.2}
+            hoverScale={1.35}
             className="absolute inset-0"
             style={{ width: '100%', height: '100%' }}
           />
@@ -128,7 +128,7 @@ function Home() {
         <div className="absolute inset-[50px] pointer-events-none">
           <Orb
             hue={0}
-            hoverIntensity={bursting ? 0.8 : 0.3}
+            hoverIntensity={bursting ? 0.95 : 0.3}
             forceHoverState={bursting}
             rotateOnHover={true}
             backgroundColor="#0a0118"
@@ -145,8 +145,8 @@ function Home() {
           }}
           animate={{ opacity: bursting ? 0.85 : 0, scale: bursting ? 1.15 : 0.7 }}
           transition={bursting
-            ? { opacity: { duration: 0.35, ease: 'easeOut' }, scale: { type: 'spring', stiffness: 200, damping: 15 } }
-            : { opacity: { duration: 1.6, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 1.6, ease: [0.4, 0, 0.2, 1] } }
+            ? { opacity: { duration: 0.6, ease: 'easeOut' }, scale: { type: 'spring', stiffness: 140, damping: 14 } }
+            : { opacity: { duration: 3.2, ease: [0.4, 0, 0.2, 1] }, scale: { duration: 3.2, ease: [0.4, 0, 0.2, 1] } }
           }
         />
         {/* Data labels */}
@@ -171,14 +171,14 @@ function Home() {
           style={{ zIndex: 9999 }}
           initial={{ opacity: 1 }}
           animate={{ opacity: 0 }}
-          transition={{ duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
+          transition={{ duration: 2.2, ease: [0.4, 0, 0.2, 1] }}
         >
           {/* Soft radial flash from core — multi-stop gradient for natural diffusion */}
           <motion.div
             className="absolute inset-0"
             initial={{ opacity: 0.9, scale: 0.3 }}
             animate={{ opacity: 0, scale: 1.8 }}
-            transition={{ duration: 0.9, ease: [0.0, 0.8, 0.2, 1] }}
+            transition={{ duration: 2.6, ease: [0.0, 0.55, 0.2, 1] }}
             style={{
               background: 'radial-gradient(circle at 10% 85%, rgba(255,255,255,0.7) 0%, rgba(236,72,153,0.4) 6%, rgba(168,85,247,0.2) 15%, rgba(99,102,241,0.08) 28%, transparent 45%)',
               filter: 'blur(8px)',
@@ -193,8 +193,8 @@ function Home() {
               initial={{ width: 20, height: 20, opacity: 0.7 - i * 0.15 }}
               animate={{ width: 500 + i * 80, height: 500 + i * 80, opacity: 0 }}
               transition={{
-                duration: 1.1 + i * 0.15,
-                delay: i * 0.1,
+                duration: 1.8 + i * 0.25,
+                delay: i * 0.15,
                 ease: [0.05, 0.85, 0.15, 1],
               }}
             >
@@ -287,7 +287,7 @@ function Home() {
                 <span className="text-purple-500">SYS</span> React + Vite
               </div>
               <div className="absolute bottom-12 -left-4 px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-lg border border-pink-400/30 text-[10px] font-mono text-pink-300 animate-[float_5s_ease-in-out_infinite_1s]">
-                <span className="text-pink-500">AI</span> Gemini 2.0
+                <span className="text-pink-500">AI</span> Multi-Model
               </div>
               <div className="absolute top-1/2 -right-8 px-3 py-1.5 bg-purple-500/20 backdrop-blur-md rounded-lg border border-purple-400/30 text-[10px] font-mono text-purple-300 animate-[float_4.5s_ease-in-out_infinite_0.3s]">
                 {'\u2728'} Tailwind CSS
@@ -392,7 +392,7 @@ function Home() {
             {[
               { icon: '\u{26A1}', label: 'Fast', desc: 'Seconds to generate' },
               { icon: '\u{1F30D}', label: 'Bilingual', desc: 'EN & CN support' },
-              { icon: '\u{2728}', label: 'AI Effects', desc: 'Gemini powered' },
+              { icon: '\u{2728}', label: 'AI Effects', desc: 'Multi-model powered' },
               { icon: '\u{1F680}', label: 'Deploy', desc: 'Netlify & GitHub' },
             ].map((f, i) => (
               <motion.div
@@ -525,12 +525,12 @@ function Home() {
           60% { transform: translateY(0); color: rgba(244,114,182,0.7); }
           100% { transform: translateY(0); color: rgba(244,114,182,0.7); }
         }
-        /* morphFilter: fast brightness/saturation overshoot → smooth settle */
+        /* morphFilter: slow brightness/saturation overshoot → smooth settle */
         @keyframes morphFilter {
           0% { filter: brightness(1) saturate(1); }
-          18% { filter: brightness(1.7) saturate(1.5); }
-          38% { filter: brightness(1.25) saturate(1.15); }
-          55% { filter: brightness(1.1) saturate(1.05); }
+          12% { filter: brightness(1.7) saturate(1.5); }
+          30% { filter: brightness(1.35) saturate(1.25); }
+          55% { filter: brightness(1.12) saturate(1.08); }
           100% { filter: brightness(1) saturate(1); }
         }
         @keyframes burstFlash {

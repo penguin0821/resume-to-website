@@ -9,22 +9,36 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
   const [loading, setLoading] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [showGuide, setShowGuide] = useState(false)
-  const [selectedModel, setSelectedModel] = useState('gemini/gemini-1.5-flash')
+  const [selectedModel, setSelectedModel] = useState('gemini/gemini-2.5-flash')
+  const [customModelId, setCustomModelId] = useState('')
+  const [useCustom, setUseCustom] = useState(true)
   const [availableModels, setAvailableModels] = useState([])
+  const [providers, setProviders] = useState([])
   const chatEndRef = useRef(null)
 
-  // Fetch available models on mount
+  // The effective model ID
+  const effectiveModel = useCustom && customModelId.trim() ? customModelId.trim() : selectedModel
+
+  // Fetch available models + providers on mount
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/ai-models`)
       .then(r => r.json())
-      .then(data => { if (data.models) setAvailableModels(data.models) })
+      .then(data => {
+        if (data.models) setAvailableModels(data.models)
+        if (data.providers) setProviders(data.providers)
+      })
       .catch(() => {
-        // Fallback if API not reachable
         setAvailableModels([
-          { id: 'gemini/gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'Google' },
-          { id: 'gemini/gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'Google' },
-          { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
-          { id: 'anthropic/claude-3-haiku-20240307', name: 'Claude 3 Haiku', provider: 'Anthropic' },
+          { id: 'gemini/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', free: true },
+          { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3', provider: 'DeepSeek', free: false },
+          { id: 'dashscope/qwen-turbo', name: 'Qwen Turbo', provider: 'DashScope', free: true },
+          { id: 'zai/glm-4.5-flash', name: 'GLM-4.5 Flash', provider: 'Zhipu', free: true },
+        ])
+        setProviders([
+          { name: 'Google', keyUrl: 'https://aistudio.google.com/apikey', prefix: 'gemini/' },
+          { name: 'DeepSeek', keyUrl: 'https://platform.deepseek.com/api_keys', prefix: 'deepseek/' },
+          { name: 'DashScope', keyUrl: 'https://dashscope.console.aliyun.com/apiKey', prefix: 'dashscope/' },
+          { name: 'Zhipu', keyUrl: 'https://open.bigmodel.cn/usercenter/apikeys', prefix: 'zai/' },
         ])
       })
   }, [])
@@ -32,6 +46,12 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Detect current provider from model ID
+  const currentProvider = (() => {
+    const prefix = effectiveModel.split('/')[0]
+    return providers.find(p => p.prefix === prefix || p.name.toLowerCase() === prefix)
+  })()
 
   const sendMessage = async () => {
     if (!input.trim() || !apiKey) return
@@ -51,7 +71,7 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
           mode,
           current_style: currentStyle || {},
           conversation: messages.slice(-6),
-          model: selectedModel,
+          model: effectiveModel,
         }),
       })
       const data = await resp.json()
@@ -59,97 +79,133 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
         const aiMsg = { role: 'ai', content: data.reply || 'Done!' }
         setMessages([...newMessages, aiMsg])
 
-        // Apply style updates
         if (data.style_updates && Object.keys(data.style_updates).length > 0) {
           onStyleUpdate?.(data.style_updates)
         }
-        // Add effect if present
         if (data.effect && (data.effect.css || data.effect.js)) {
           onEffectAdd?.({ ...data.effect, id: Date.now() })
         }
       } else {
-        setMessages([...newMessages, { role: 'ai', content: `\u26A0\uFE0F ${data.detail || 'Failed'}` }])
+        setMessages([...newMessages, { role: 'ai', content: `⚠️ ${data.detail || 'Failed'}` }])
       }
     } catch (err) {
-      setMessages([...newMessages, { role: 'ai', content: '\u26A0\uFE0F Connection error' }])
+      setMessages([...newMessages, { role: 'ai', content: '⚠️ Connection error' }])
     } finally {
       setLoading(false)
     }
   }
 
+  // Group models by provider for display
+  const providerGroups = availableModels.reduce((acc, m) => {
+    if (!acc[m.provider]) acc[m.provider] = []
+    acc[m.provider].push(m)
+    return acc
+  }, {})
+
   return (
     <section>
       <h2 className="text-lg font-extrabold text-gray-800 mb-2 flex items-center gap-2">
         <span className="w-1 h-6 rounded-full bg-gradient-to-b from-purple-500 to-pink-500 inline-block" />
-        {'\u2728'} {t.aiAssistant || 'AI Design Assistant'} <span className="text-sm font-normal text-gray-400">{t.aiOptional || '(Optional)'}</span>
+        ✨ {t.aiAssistant || 'AI Design Assistant'} <span className="text-sm font-normal text-gray-400">{t.aiOptional || '(Optional)'}</span>
       </h2>
       <p className="text-xs text-gray-400 mb-4 ml-3">{t.aiAssistantDesc || 'Describe the style you want in natural language, AI will adjust your design'}</p>
 
-      {/* API Key + Model Selector */}
+      {/* Model Selector */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{lang === 'zh' ? 'AI\u6a21\u578b' : 'AI Model'}</label>
+          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{lang === 'zh' ? 'AI模型' : 'AI Model'}</label>
           <button type="button" onClick={() => setShowGuide(!showGuide)}
             className="text-[10px] text-purple-500 hover:text-purple-700 underline ml-auto">
-            {showGuide ? '\u25B2' : '\u25BC'} {t.apiKeyGuideTitle || 'How to get?'}
+            {showGuide ? '▲' : '▼'} {lang === 'zh' ? '如何获取API Key？' : 'How to get API Key?'}
           </button>
         </div>
-        {/* Model selector */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {availableModels.map(m => (
-            <button key={m.id} type="button"
-              onClick={() => setSelectedModel(m.id)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
-                selectedModel === m.id
-                  ? 'bg-purple-100 text-purple-700 ring-1 ring-purple-300'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-              }`}>
-              <span className="text-[9px] text-gray-400">{m.provider}</span> {m.name}
-            </button>
+
+        {/* Preset model buttons grouped by provider */}
+        <div className="space-y-2 mb-3">
+          {Object.entries(providerGroups).map(([provider, models]) => (
+            <div key={provider} className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[9px] text-gray-400 font-medium w-16 shrink-0">{provider}</span>
+              {models.map(m => (
+                <button key={m.id} type="button"
+                  onClick={() => { setSelectedModel(m.id); setUseCustom(false) }}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                    !useCustom && selectedModel === m.id
+                      ? 'bg-purple-100 text-purple-700 ring-1 ring-purple-300'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}>
+                  {m.name}
+                  {m.free && <span className="ml-1 px-1 py-0.5 bg-green-100 text-green-600 rounded text-[8px] font-bold">FREE</span>}
+                </button>
+              ))}
+            </div>
           ))}
         </div>
+
+        {/* Custom model ID input — always visible */}
+        <div className="mb-3 p-3 bg-purple-50/60 border border-purple-200 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
+              ✏️ {lang === 'zh' ? '自定义模型' : 'Custom Model'}
+            </span>
+            <span className="text-[9px] text-purple-400">
+              {lang === 'zh' ? '支持任意 LiteLLM 兼容模型' : 'Any LiteLLM compatible model'}
+            </span>
+          </div>
+          <div className="flex gap-2 items-center">
+            <input type="text" value={customModelId} onChange={e => setCustomModelId(e.target.value)}
+              placeholder={lang === 'zh' ? '输入模型ID，如 deepseek/deepseek-chat' : 'e.g. deepseek/deepseek-chat'}
+              className="flex-1 px-3 py-2 border border-purple-300 rounded-lg text-xs font-mono outline-none focus:ring-2 focus:ring-purple-400 bg-white" />
+            <span className="text-[9px] text-purple-400 whitespace-nowrap font-mono">provider/model</span>
+          </div>
+          {customModelId.trim() && (
+            <p className="text-[10px] text-purple-600 mt-1.5 font-medium">
+              ✓ {lang === 'zh' ? '当前使用' : 'Using'}: <span className="font-mono">{customModelId.trim()}</span>
+              {currentProvider && <span className="text-gray-400 ml-1">({currentProvider.name})</span>}
+            </p>
+          )}
+        </div>
+
         {/* API Key input */}
         <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-          {(() => {
-            const m = availableModels.find(x => x.id === selectedModel)
-            return m ? `${m.provider} API Key` : 'API Key'
-          })()}
+          {currentProvider ? `${currentProvider.name} API Key` : 'API Key'}
         </label>
         <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)}
-          placeholder={t.apiKeyPh || 'Paste your Gemini API key...'}
+          placeholder={currentProvider
+            ? (lang === 'zh' ? `粘贴你的 ${currentProvider.name} API Key` : `Paste your ${currentProvider.name} API Key`)
+            : (t.apiKeyPh || 'Paste your API key...')}
           className={`w-full px-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 ${
             apiKey ? 'border-green-400 focus:ring-green-300 bg-green-50' : 'border-purple-300 focus:ring-purple-300'
           }`} />
         {apiKey ? (
-          <p className="text-xs text-green-600 mt-1">{'\u2713'} Key set</p>
+          <p className="text-xs text-green-600 mt-1">✓ Key set — {lang === 'zh' ? '模型' : 'Model'}: <span className="font-mono text-[10px]">{effectiveModel}</span></p>
         ) : (
           <p className="text-xs text-gray-400 mt-1">{t.apiKeyRequired || 'Required for AI features'}</p>
         )}
 
+        {/* Dynamic guide based on current provider */}
         {showGuide && (
           <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded-xl">
-            <ol className="text-xs text-purple-700 space-y-1">
-              {selectedModel.startsWith('gemini') ? (
-                <>
-                  <li>{t.apiKeyStep1 || '1. Visit'} <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="font-semibold underline">Google AI Studio</a></li>
-                  <li>{t.apiKeyStep2 || '2. Click "Create API Key"'}</li>
-                  <li>{t.apiKeyStep3 || '3. Copy and paste here'}</li>
-                  <li>{t.apiKeyStep4 || '4. Free tier available'}</li>
-                </>
-              ) : selectedModel.startsWith('openai') ? (
-                <>
-                  <li>{lang === 'zh' ? '1. \u8bbf\u95ee' : '1. Visit'} <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="font-semibold underline">OpenAI Platform</a></li>
-                  <li>{lang === 'zh' ? '2. \u521b\u5efaAPI Key' : '2. Create API Key'}</li>
-                  <li>{lang === 'zh' ? '3. \u590d\u5236\u7c98\u8d34\u5230\u4e0a\u65b9' : '3. Copy and paste above'}</li>
-                </>
-              ) : (
-                <>
-                  <li>{lang === 'zh' ? '1. \u8bbf\u95ee' : '1. Visit'} <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer" className="font-semibold underline">Anthropic Console</a></li>
-                  <li>{lang === 'zh' ? '2. \u521b\u5efaAPI Key' : '2. Create API Key'}</li>
-                  <li>{lang === 'zh' ? '3. \u590d\u5236\u7c98\u8d34\u5230\u4e0a\u65b9' : '3. Copy and paste above'}</li>
-                </>
-              )}
-            </ol>
+            <p className="text-[10px] text-gray-500 mb-2">{lang === 'zh' ? '支持的所有厂商：' : 'All supported providers:'}</p>
+            <div className="space-y-1.5">
+              {providers.map(p => {
+                const isActive = currentProvider?.name === p.name
+                return (
+                  <div key={p.name} className={`flex items-center gap-2 text-xs ${isActive ? 'text-purple-700 font-semibold' : 'text-gray-500'}`}>
+                    {isActive && <span className="text-purple-500">→</span>}
+                    <span className="w-20 shrink-0">{p.name}</span>
+                    <a href={p.keyUrl} target="_blank" rel="noreferrer" className="underline hover:text-purple-600 truncate text-[10px]">
+                      {p.keyUrl.replace('https://', '')}
+                    </a>
+                    <span className="text-[9px] text-gray-400 font-mono ml-auto shrink-0">{p.prefix}*</span>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2 border-t border-purple-100 pt-2">
+              {lang === 'zh'
+                ? '💡 点击上方链接前往对应厂商申请Key，粘贴到上方输入框即可。Google Gemini 和 Qwen Turbo 有免费额度。'
+                : '💡 Click links above to get API keys. Google Gemini and Qwen Turbo have free tiers.'}
+            </p>
           </div>
         )}
       </div>
@@ -164,7 +220,7 @@ function AIChatPanel({ mode, currentStyle, onStyleUpdate, onEffectAdd }) {
                   ? 'bg-indigo-600 text-white rounded-br-md'
                   : 'bg-white border border-gray-200 text-gray-700 rounded-bl-md shadow-sm'
               }`}>
-                {msg.role === 'ai' && <span className="text-purple-500 mr-1">{'\u2728'}</span>}
+                {msg.role === 'ai' && <span className="text-purple-500 mr-1">✨</span>}
                 {msg.content}
               </div>
             </div>

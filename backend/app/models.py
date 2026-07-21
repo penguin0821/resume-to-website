@@ -89,7 +89,7 @@ class GenerateRequest(BaseModel):
 class AIEffectRequest(BaseModel):
     description: str
     api_key: str = ""
-    model: str = "gemini/gemini-1.5-flash"
+    model: str = "gemini/gemini-2.5-flash"
 
 
 class AIEffectResponse(BaseModel):
@@ -104,7 +104,7 @@ class AIStyleChatRequest(BaseModel):
     mode: str = "personal"  # personal or professional
     current_style: dict = {}  # current style parameters
     conversation: list = []  # previous messages [{"role": "user/ai", "content": "..."}]
-    model: str = "gemini/gemini-1.5-flash"  # LiteLLM model identifier
+    model: str = "gemini/gemini-2.5-flash"  # LiteLLM model identifier
 
 
 class AIStyleChatResponse(BaseModel):

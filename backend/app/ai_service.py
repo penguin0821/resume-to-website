@@ -16,15 +16,42 @@ _default_api_key = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("AI_AP
 
 # Supported models for the frontend model selector
 SUPPORTED_MODELS = [
-    {"id": "gemini/gemini-1.5-flash", "name": "Gemini 1.5 Flash", "provider": "Google", "keyEnv": "GEMINI_API_KEY"},
-    {"id": "gemini/gemini-2.0-flash", "name": "Gemini 2.0 Flash", "provider": "Google", "keyEnv": "GEMINI_API_KEY"},
-    {"id": "openai/gpt-4o-mini", "name": "GPT-4o Mini", "provider": "OpenAI", "keyEnv": "OPENAI_API_KEY"},
-    {"id": "openai/gpt-4o", "name": "GPT-4o", "provider": "OpenAI", "keyEnv": "OPENAI_API_KEY"},
-    {"id": "anthropic/claude-3-haiku-20240307", "name": "Claude 3 Haiku", "provider": "Anthropic", "keyEnv": "ANTHROPIC_API_KEY"},
-    {"id": "anthropic/claude-3-5-sonnet-20241022", "name": "Claude 3.5 Sonnet", "provider": "Anthropic", "keyEnv": "ANTHROPIC_API_KEY"},
+    # Google — Free tier via Google AI Studio
+    {"id": "gemini/gemini-2.5-flash", "name": "Gemini 2.5 Flash", "provider": "Google", "keyEnv": "GEMINI_API_KEY", "free": True},
+    {"id": "gemini/gemini-2.5-pro", "name": "Gemini 2.5 Pro", "provider": "Google", "keyEnv": "GEMINI_API_KEY", "free": True},
+    # OpenAI — Paid
+    {"id": "openai/gpt-4.1-mini", "name": "GPT-4.1 Mini", "provider": "OpenAI", "keyEnv": "OPENAI_API_KEY", "free": False},
+    {"id": "openai/gpt-4.1", "name": "GPT-4.1", "provider": "OpenAI", "keyEnv": "OPENAI_API_KEY", "free": False},
+    # Anthropic — Paid
+    {"id": "anthropic/claude-sonnet-4-20250514", "name": "Claude Sonnet 4", "provider": "Anthropic", "keyEnv": "ANTHROPIC_API_KEY", "free": False},
+    # DeepSeek — Paid (very cheap)
+    {"id": "deepseek/deepseek-chat", "name": "DeepSeek V3", "provider": "DeepSeek", "keyEnv": "DEEPSEEK_API_KEY", "free": False},
+    {"id": "deepseek/deepseek-reasoner", "name": "DeepSeek R1", "provider": "DeepSeek", "keyEnv": "DEEPSEEK_API_KEY", "free": False},
+    # Qwen / DashScope — Free tier + Paid
+    {"id": "dashscope/qwen-turbo", "name": "Qwen Turbo", "provider": "DashScope", "keyEnv": "DASHSCOPE_API_KEY", "free": True},
+    {"id": "dashscope/qwen-max", "name": "Qwen Max", "provider": "DashScope", "keyEnv": "DASHSCOPE_API_KEY", "free": False},
+    # GLM (Zhipu AI) — Free tier available
+    {"id": "zai/glm-4.5-flash", "name": "GLM-4.5 Flash", "provider": "Zhipu", "keyEnv": "ZAI_API_KEY", "free": True},
+    {"id": "zai/glm-4.7", "name": "GLM-4.7", "provider": "Zhipu", "keyEnv": "ZAI_API_KEY", "free": False},
+    # Doubao (Volcengine) — Paid
+    {"id": "volcengine/doubao-pro-32k", "name": "Doubao Pro 32K", "provider": "Volcengine", "keyEnv": "VOLCENGINE_API_KEY", "free": False},
+    # Tencent Hunyuan — via TokenHub
+    {"id": "tencent/hunyuan-turbos-latest", "name": "Hunyuan TurboS", "provider": "Tencent", "keyEnv": "TENCENT_API_KEY", "free": False},
 ]
 
-DEFAULT_MODEL = "gemini/gemini-1.5-flash"
+# Provider metadata for frontend guide links
+SUPPORTED_PROVIDERS = [
+    {"name": "Google", "keyUrl": "https://aistudio.google.com/apikey", "keyEnv": "GEMINI_API_KEY", "prefix": "gemini/"},
+    {"name": "OpenAI", "keyUrl": "https://platform.openai.com/api-keys", "keyEnv": "OPENAI_API_KEY", "prefix": "openai/"},
+    {"name": "Anthropic", "keyUrl": "https://console.anthropic.com/", "keyEnv": "ANTHROPIC_API_KEY", "prefix": "anthropic/"},
+    {"name": "DeepSeek", "keyUrl": "https://platform.deepseek.com/api_keys", "keyEnv": "DEEPSEEK_API_KEY", "prefix": "deepseek/"},
+    {"name": "DashScope", "keyUrl": "https://dashscope.console.aliyun.com/apiKey", "keyEnv": "DASHSCOPE_API_KEY", "prefix": "dashscope/"},
+    {"name": "Zhipu", "keyUrl": "https://open.bigmodel.cn/usercenter/apikeys", "keyEnv": "ZAI_API_KEY", "prefix": "zai/"},
+    {"name": "Volcengine", "keyUrl": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey", "keyEnv": "VOLCENGINE_API_KEY", "prefix": "volcengine/"},
+    {"name": "Tencent", "keyUrl": "https://console.cloud.tencent.com/hunyuan/api-key", "keyEnv": "TENCENT_API_KEY", "prefix": "tencent/"},
+]
+
+DEFAULT_MODEL = "gemini/gemini-2.5-flash"
 
 
 def _call_ai(prompt: str, api_key: str, model: str = DEFAULT_MODEL) -> str:
@@ -41,7 +68,7 @@ def _call_ai(prompt: str, api_key: str, model: str = DEFAULT_MODEL) -> str:
     else:
         # Fallback: use google.generativeai directly (only works for Gemini)
         genai.configure(api_key=api_key)
-        gm = genai.GenerativeModel("gemini-1.5-flash")
+        gm = genai.GenerativeModel("gemini-2.5-flash")
         resp = gm.generate_content(prompt)
         return resp.text
 

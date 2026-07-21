@@ -27,8 +27,9 @@ Resume-to-Website 是一个全栈 Web 应用，帮助用户将简历信息快速
 - **拼接模式**：横向 / 斜向方向 + 间隔重复（如红蓝红蓝红蓝）
 - 职业精英风支持 3 种 UI 预设：优雅 / 极简 / 商务，可自定义点缀色和头部背景
 - 职业精英风支持 3 种内容布局：经典 / 海报 / 侧边栏
-- **AI 风格助手**：通过 Gemini API 对话调整设计风格（用户自主申请 Key）
-- **AI 特效**：基于 Gemini API 生成动态 CSS/JS 特效，含安全清洗机制
+- **AI 风格助手**：通过 LiteLLM 统一接口对话调整设计风格，支持 8 个厂商 13+ 模型
+- **AI 特效**：基于 LiteLLM 多模型生成动态 CSS/JS 特效，含安全清洗机制
+- **自定义模型输入**：支持任意 LiteLLM 兼容模型 ID（provider/model 格式）
 - **拖拽板块排序**：自定义简历各板块的展示顺序
 - **网站截图下载**：预览页一键截图保存为 PNG（基于 html-to-image）
 - **预览持久化**：预览数据存入 sessionStorage，刷新页面不丢失
@@ -52,7 +53,7 @@ Resume-to-Website 是一个全栈 Web 应用，帮助用户将简历信息快速
 | 截图 | html-to-image |
 | 后端框架 | Python FastAPI + Uvicorn |
 | 数据校验 | Pydantic v2 |
-| AI 服务 | Google Generative AI (Gemini 1.5 Flash) |
+| AI 服务 | LiteLLM 统一接口（8 厂商 13+ 模型：Google/OpenAI/Anthropic/DeepSeek/千问/GLM/豆包/混元） |
 | 双语方案 | React Context + 自定义 i18n |
 
 ## 本地运行
@@ -100,12 +101,13 @@ resume-to-website/
 │       ├── main.py                 # FastAPI 入口
 │       ├── routes.py               # API 路由
 │       ├── models.py               # Pydantic 数据模型
-│       ├── ai_service.py           # AI 特效服务（Gemini API）
+│       ├── ai_service.py           # AI 特效服务（LiteLLM 多模型）
 │       ├── deploy_service.py       # 部署服务（GitHub Pages / Netlify）
 │       └── generators/
-│           ├── i18n.py             # 双语工具（切换脚本、标签字典）
-│           ├── personal.py         # 个性创意风格生成器
-│           └── professional.py     # 职业精英风格生成器
+│       │   ├── i18n.py             # 双语工具（切换脚本、标签字典）
+│       │   ├── personal.py         # 个性创意风格生成器
+│       │   ├── professional.py     # 职业精英风格生成器
+│       │   └── utils.py            # 公共工具函数
 ├── frontend/
 │   └── src/
 │       ├── main.jsx                # React 入口
@@ -117,11 +119,11 @@ resume-to-website/
 │       │   ├── ResumeForm.jsx      # 简历表单（核心组件）
 │       │   ├── AIChatPanel.jsx     # AI 风格助手面板
 │       │   ├── SectionOrder.jsx    # 拖拽板块排序
-│       │   └── reactbits/          # 3D WebGL 动效组件
-│       │       ├── MetaBalls.jsx        # 元球特效
-│       │       ├── MagicRings.jsx       # 魔法环特效
-│       │       ├── Orb.jsx              # 能量核心特效
-│       │       └── ElectricBorder.jsx   # 电光边框特效
+│       │   ├── reactbits/          # 3D WebGL 动效组件
+│       │   │   ├── MetaBalls.jsx / MetaBallsLazy.jsx
+│       │   │   ├── MagicRings.jsx / MagicRingsLazy.jsx
+│       │   │   ├── Orb.jsx / OrbLazy.jsx
+│       │   │   └── ElectricBorder.jsx
 │       └── pages/
 │           ├── Home.jsx            # 首页（风格选择）
 │           ├── PersonalForm.jsx    # 个性创意表单
@@ -144,13 +146,14 @@ resume-to-website/
 ### 双语网站
 
 1. 点击右上角 **EN / 中文** 切换前端界面语言
-2. 表单中打开 **中英双语支持** 开关，为中文字段填写对应翻译
+2. 表单中打开 **双语网站** 开关，为第二种语言字段填写对应内容
 3. 生成的网站将自动支持语言切换
 4. 如果只填写了一种语言，则生成单语言网站
 
 ## 开发计划
 
-- [x] AI 特效（基于 Gemini API，用户自主申请 Key）
+- [x] AI 多模型支持（LiteLLM 统一接口，8 厂商 13+ 模型，自定义模型 ID）
+- [x] AI 特效（多厂商 API，用户自主申请 Key）
 - [x] 一键部署到 GitHub Pages / Netlify
 - [ ] AI 简历解析（上传 PDF/Word 自动提取信息）
 - [ ] 更多网站模板和风格

@@ -6,7 +6,7 @@ from app.models import (
 )
 from app.generators.personal import generate_personal_site
 from app.generators.professional import generate_professional_site
-from app.ai_service import generate_effects, generate_style_chat, SUPPORTED_MODELS
+from app.ai_service import generate_effects, generate_style_chat, SUPPORTED_MODELS, SUPPORTED_PROVIDERS
 
 router = APIRouter()
 
@@ -42,7 +42,7 @@ def generate_site(request: GenerateRequest):
 
 @router.get("/api/ai-models")
 def get_ai_models():
-    return {"models": SUPPORTED_MODELS}
+    return {"models": SUPPORTED_MODELS, "providers": SUPPORTED_PROVIDERS}
 
 
 @router.post("/api/ai-effects")
