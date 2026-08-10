@@ -6,10 +6,33 @@ import AIChatPanel from './AIChatPanel'
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
 const DRAFT_DEBOUNCE = 800 // ms
 
-function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFromAI }) {
+function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFromAI, theme = 'personal' }) {
   const { t, lang } = useLang()
+  
+  // Theme configuration
+  const isPersonal = theme === 'personal'
+  const th = {
+    sectionBar: isPersonal ? 'from-orange-400 to-pink-500' : 'from-slate-700 to-slate-800',
+    inputBorder: isPersonal ? 'border-orange-200 focus:ring-orange-400 focus:border-orange-400 bg-orange-50/30 focus:bg-white' : 'border-slate-200 focus:ring-slate-400 focus:border-slate-400 bg-slate-50/50 focus:bg-white',
+    inputLabel: isPersonal ? 'text-orange-600' : 'text-slate-600',
+    cardBg: isPersonal ? 'bg-white/80 backdrop-blur border-orange-100' : 'bg-white border-slate-200',
+    cardSectionBg: isPersonal ? 'bg-gradient-to-r from-orange-50/50 to-pink-50/50 border-orange-100' : 'bg-slate-50/50 border-slate-200',
+    btnPrimary: isPersonal ? 'bg-gradient-to-r from-orange-500 to-pink-500 hover:shadow-lg hover:shadow-orange-200' : 'bg-slate-800 hover:bg-slate-900 hover:shadow-lg hover:shadow-slate-300',
+    btnSecondary: isPersonal ? 'text-orange-600 hover:text-orange-800' : 'text-slate-600 hover:text-slate-800',
+    tagBg: isPersonal ? 'bg-gradient-to-r from-orange-100 to-pink-100 text-orange-700' : 'bg-slate-100 text-slate-700',
+    tagCnBg: isPersonal ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-amber-50 text-amber-700 border-amber-200',
+    toggleBg: isPersonal ? 'from-amber-50 to-orange-50 border-amber-200' : 'from-amber-50 to-yellow-50 border-amber-200',
+    toggleActive: isPersonal ? 'bg-gradient-to-r from-orange-500 to-pink-500' : 'bg-amber-500',
+    submitBtn: isPersonal ? 'bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:shadow-xl hover:shadow-orange-200/50' : 'bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black hover:shadow-xl',
+    uploadBtn: isPersonal ? 'bg-orange-50 text-orange-600 hover:bg-orange-100' : 'bg-slate-50 text-slate-600 hover:bg-slate-100',
+    addWorkEdu: isPersonal ? 'text-orange-600 hover:text-orange-800' : 'text-slate-600 hover:text-slate-800',
+    exportImport: isPersonal ? 'border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300',
+    draftNotice: isPersonal ? 'bg-green-50 border-green-200 text-green-700' : 'bg-green-50 border-green-200 text-green-700',
+    aiEffect: isPersonal ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-purple-50 border-purple-200 text-purple-700',
+  }
   const draftKey = `resume-draft-${mode}`
   const [showBilingual, setShowBilingual] = useState(false)
+  const [lastSaved, setLastSaved] = useState(null)
   const [resume, setResume] = useState({
     name: '', title: '', email: '', phone: '', bio: '', avatar_url: '',
     work_experiences: [{ company: '', position: '', duration: '', description: '', company_cn: '', position_cn: '', duration_cn: '', description_cn: '' }],
@@ -84,15 +107,22 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     if (fileInputRef.current) fileInputRef.current.value = ''
   }, [lang, markDirty])
 
+  // AI Effects state
+  const [aiEffects, setAiEffects] = useState([])
+  const [sectionOrder, setSectionOrder] = useState([]) // restored from draft on mount
+
   // Restore draft from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(draftKey)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (parsed && parsed.name) {
+        if (parsed && parsed.resume && parsed.resume.name) {
           setHasDraft(true)
-          setResume(parsed)
+          setResume(parsed.resume)
+          if (typeof parsed.showBilingual === 'boolean') setShowBilingual(parsed.showBilingual)
+          if (Array.isArray(parsed.sectionOrder)) setSectionOrder(parsed.sectionOrder)
+          if (parsed.savedAt) setLastSaved(new Date(parsed.savedAt))
           setIsDirty(true)
           isRestoring.current = true
         }
@@ -100,7 +130,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     } catch { /* ignore corrupt data */ }
   }, [draftKey])
 
-  // Auto-save draft to localStorage with debounce
+  // Auto-save draft to localStorage with debounce (includes resume + UI state)
   useEffect(() => {
     if (isRestoring.current) {
       isRestoring.current = false
@@ -110,11 +140,18 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     if (draftTimer.current) clearTimeout(draftTimer.current)
     draftTimer.current = setTimeout(() => {
       try {
-        localStorage.setItem(draftKey, JSON.stringify(resume))
+        const now = new Date().toISOString()
+        localStorage.setItem(draftKey, JSON.stringify({
+          resume,
+          showBilingual,
+          sectionOrder,
+          savedAt: now,
+        }))
+        setLastSaved(new Date(now))
       } catch { /* quota exceeded */ }
     }, DRAFT_DEBOUNCE)
     return () => { if (draftTimer.current) clearTimeout(draftTimer.current) }
-  }, [resume, isDirty, draftKey])
+  }, [resume, isDirty, draftKey, showBilingual, sectionOrder])
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(draftKey)
@@ -140,10 +177,6 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [isDirty])
-
-  // AI Effects state
-  const [aiEffects, setAiEffects] = useState([])
-  const [sectionOrder, setSectionOrder] = useState([])
 
   const updateField = (field, value) => { markDirty(); setResume(prev => ({ ...prev, [field]: value })) }
 
@@ -198,14 +231,21 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
     }
   }
 
-  const isPersonal = mode === 'personal'
+  // isPersonal already defined in theme config above
 
   return (
     <form onSubmit={handleSubmit} className="space-y-12">
       {/* Draft restored notice */}
       {hasDraft && (
         <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-2xl px-6 py-4">
-          <p className="text-sm text-green-700">✨ {lang === 'zh' ? '已自动恢复上次的填写' : 'Your previous draft has been restored'}</p>
+          <div>
+            <p className="text-sm text-green-700">✨ {lang === 'zh' ? '已自动恢复上次的填写' : 'Your previous draft has been restored'}</p>
+            {lastSaved && (
+              <p className="text-[10px] text-green-500 mt-0.5">
+                {lang === 'zh' ? '上次保存：' : 'Last saved: '}{lastSaved.toLocaleString()}
+              </p>
+            )}
+          </div>
           <button type="button" onClick={clearDraft} className="text-xs text-green-600 hover:text-red-500 underline ml-4 flex-shrink-0">
             {lang === 'zh' ? '清除草稿' : 'Clear Draft'}
           </button>
@@ -214,23 +254,28 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       {/* Import / Export */}
       <div className="flex items-center gap-3">
         <button type="button" onClick={exportJSON}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">
+          className={`inline-flex items-center gap-1.5 px-4 py-2 bg-white border rounded-xl text-xs font-medium transition-all shadow-sm ${th.exportImport}`}>
           <span>{'\u{1F4E5}'}</span> {lang === 'zh' ? '导出JSON' : 'Export JSON'}
         </button>
-        <label className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm cursor-pointer">
+        <label className={`inline-flex items-center gap-1.5 px-4 py-2 bg-white border rounded-xl text-xs font-medium transition-all shadow-sm cursor-pointer ${th.exportImport}`}>
           <span>{'\u{1F4E4}'}</span> {lang === 'zh' ? '导入JSON' : 'Import JSON'}
           <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={importJSON} />
         </label>
         <span className="text-[10px] text-gray-400">{lang === 'zh' ? '保存/恢复表单数据' : 'Save or restore form data'}</span>
+        {lastSaved && (
+          <span className="text-[10px] text-green-500 ml-auto">
+            💾 {lang === 'zh' ? '自动保存中' : 'Auto-saved'} {lastSaved.toLocaleTimeString()}
+          </span>
+        )}
       </div>
       {/* Bilingual Toggle */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl px-6 py-5">
+      <div className={`flex items-center justify-between bg-gradient-to-r rounded-2xl px-6 py-5 ${th.toggleBg}`}>
         <div>
           <p className="text-sm font-semibold text-amber-800">{t.bilingualTitle}</p>
           <p className="text-xs text-amber-600 mt-1">{t.bilingualDesc}</p>
         </div>
         <button type="button" onClick={() => setShowBilingual(!showBilingual)}
-          className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ml-4 ${showBilingual ? 'bg-amber-500' : 'bg-gray-300'}`}>
+          className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ml-4 ${showBilingual ? th.toggleActive : 'bg-gray-300'}`}>
           <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${showBilingual ? 'translate-x-7' : 'translate-x-0.5'}`} />
         </button>
       </div>
@@ -238,43 +283,43 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       {/* Basic Info */}
       <section>
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
-          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.basicInfo}
         </h2>
         <div className="grid md:grid-cols-2 gap-5">
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.name} {t.required}</label>
+            <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-2 ${th.inputLabel}`}>{t.name} {t.required}</label>
             <input type="text" required value={resume.name} onChange={e => updateField('name', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white" placeholder={t.namePh} />
+              className={`w-full px-4 py-3 border rounded-xl outline-none transition-all ${th.inputBorder}`} placeholder={t.namePh} />
           </div>
           {showBilingual && (
           <div>
-            <label className="block text-[11px] font-semibold text-amber-600 uppercase tracking-wider mb-2">{t.nameCn}</label>
+            <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-2 ${th.inputLabel}`}>{t.nameCn}</label>
             <input type="text" value={resume.name_cn} onChange={e => updateField('name_cn', e.target.value)}
-              className="w-full px-4 py-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-amber-50/50 focus:bg-white transition-all" placeholder={t.nameCnPh} />
+              className={`w-full px-4 py-3 border rounded-xl outline-none bg-amber-50/50 focus:bg-white transition-all ${th.inputLabel === 'text-orange-600' ? 'border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent' : 'border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent'}`} placeholder={t.nameCnPh} />
           </div>
           )}
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.titlePosition} {t.required}</label>
+            <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-2 ${th.inputLabel}`}>{t.titlePosition} {t.required}</label>
             <input type="text" required value={resume.title} onChange={e => updateField('title', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white" placeholder={t.titlePh} />
+              className={`w-full px-4 py-3 border rounded-xl outline-none transition-all ${th.inputBorder}`} placeholder={t.titlePh} />
           </div>
           {showBilingual && (
           <div>
-            <label className="block text-[11px] font-semibold text-amber-600 uppercase tracking-wider mb-2">{t.titleCn}</label>
+            <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-2 ${th.inputLabel}`}>{t.titleCn}</label>
             <input type="text" value={resume.title_cn} onChange={e => updateField('title_cn', e.target.value)}
               className="w-full px-4 py-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-amber-50/50 focus:bg-white transition-all" placeholder={t.titleCnPh} />
           </div>
           )}
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.email}</label>
+            <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-2 ${th.inputLabel}`}>{t.email}</label>
             <input type="email" value={resume.email} onChange={e => updateField('email', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white" placeholder={t.emailPh} />
+              className={`w-full px-4 py-3 border rounded-xl outline-none transition-all ${th.inputBorder}`} placeholder={t.emailPh} />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.phone}</label>
+            <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-2 ${th.inputLabel}`}>{t.phone}</label>
             <input type="text" value={resume.phone} onChange={e => updateField('phone', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white" placeholder={t.phonePh} />
+              className={`w-full px-4 py-3 border rounded-xl outline-none transition-all ${th.inputBorder}`} placeholder={t.phonePh} />
           </div>
         </div>
         <div className="mt-5">
@@ -285,7 +330,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
               <img src={resume.avatar_url} alt="avatar" className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
             )}
             <div className="flex-1">
-              <label className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors text-sm font-medium">
+              <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-colors text-sm font-medium ${th.uploadBtn}`}>
                 {'\u{1F4F7}'} {t.uploadAvatar}
                 <input type="file" accept="image/*" className="hidden" onChange={e => {
                   const file = e.target.files[0]
@@ -303,7 +348,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
               <span className="text-xs text-gray-400 mx-2">{t.orEnterUrl}</span>
               <input type="url" value={resume.avatar_url?.startsWith('data:') ? '' : resume.avatar_url}
                 onChange={e => updateField('avatar_url', e.target.value)}
-                className="inline-block w-48 px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="https://..." />
+                className={`inline-block w-48 px-3 py-2.5 border rounded-xl text-sm outline-none transition-all ${th.inputBorder}`} placeholder="https://..." />
               {resume.avatar_url && (
                 <button type="button" onClick={() => updateField('avatar_url', '')} className="ml-2 text-red-400 hover:text-red-600 text-xs">{t.clearImage}</button>
               )}
@@ -311,13 +356,13 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
           </div>
         </div>
         <div className="mt-5">
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.aboutMe}</label>
+          <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-2 ${th.inputLabel}`}>{t.aboutMe}</label>
           <textarea value={resume.bio} rows={3} onChange={e => updateField('bio', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white resize-none" placeholder={t.bioPh} />
+            className={`w-full px-4 py-3 border rounded-xl outline-none transition-all resize-none ${th.inputBorder}`} placeholder={t.bioPh} />
         </div>
         {showBilingual && (
         <div className="mt-4">
-          <label className="block text-[11px] font-semibold text-amber-600 uppercase tracking-wider mb-2">{t.bioCn}</label>
+          <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-2 ${th.inputLabel}`}>{t.bioCn}</label>
           <textarea value={resume.bio_cn} rows={3} onChange={e => updateField('bio_cn', e.target.value)}
             className="w-full px-4 py-3 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-amber-50/50 focus:bg-white resize-none transition-all" placeholder={t.bioCnPh} />
         </div>
@@ -332,11 +377,11 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       {/* Work Experience */}
       <section>
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
-          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.workExperience}
         </h2>
         {resume.work_experiences.map((exp, i) => (
-          <div key={i} className="bg-gray-50/80 rounded-2xl p-6 mb-5 border border-gray-100">
+          <div key={i} className={`${th.cardSectionBg} rounded-2xl p-6 mb-5 border`}>
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-semibold text-gray-500">#{i + 1}</span>
               {resume.work_experiences.length > 1 && (
@@ -346,19 +391,19 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.company}</label>
-                <input type="text" placeholder={t.company} value={exp.company} onChange={e => updateWork(i, 'company', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
+                <input type="text" placeholder={t.company} value={exp.company} onChange={e => updateWork(i, 'company', e.target.value)} className={`w-full px-3 py-2.5 border rounded-xl outline-none transition-all ${th.inputBorder}`} />
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.position}</label>
-                <input type="text" placeholder={t.position} value={exp.position} onChange={e => updateWork(i, 'position', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
+                <input type="text" placeholder={t.position} value={exp.position} onChange={e => updateWork(i, 'position', e.target.value)} className={`w-full px-3 py-2.5 border rounded-xl outline-none transition-all ${th.inputBorder}`} />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.duration}</label>
-                <input type="text" placeholder={t.durationPh} value={exp.duration} onChange={e => updateWork(i, 'duration', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
+                <input type="text" placeholder={t.durationPh} value={exp.duration} onChange={e => updateWork(i, 'duration', e.target.value)} className={`w-full px-3 py-2.5 border rounded-xl outline-none transition-all ${th.inputBorder}`} />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.description}</label>
-                <textarea placeholder={t.descPh} value={exp.description} rows={2} onChange={e => updateWork(i, 'description', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white resize-none" />
+                <textarea placeholder={t.descPh} value={exp.description} rows={2} onChange={e => updateWork(i, 'description', e.target.value)} className={`w-full px-3 py-2.5 border rounded-xl outline-none transition-all resize-none ${th.inputBorder}`} />
               </div>
             </div>
             {showBilingual && (
@@ -386,17 +431,17 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
             )}
           </div>
         ))}
-        <button type="button" onClick={addWork} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">{t.addWork}</button>
+        <button type="button" onClick={addWork} className={`text-sm font-medium ${th.addWorkEdu}`}>{t.addWork}</button>
       </section>
 
       {/* Education */}
       <section>
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
-          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.education}
         </h2>
         {resume.educations.map((edu, i) => (
-          <div key={i} className="bg-gray-50/80 rounded-2xl p-6 mb-5 border border-gray-100">
+          <div key={i} className={`${th.cardSectionBg} rounded-2xl p-6 mb-5 border`}>
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-semibold text-gray-500">#{i + 1}</span>
               {resume.educations.length > 1 && (
@@ -406,15 +451,15 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.school}</label>
-                <input type="text" placeholder={t.school} value={edu.school} onChange={e => updateEdu(i, 'school', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
+                <input type="text" placeholder={t.school} value={edu.school} onChange={e => updateEdu(i, 'school', e.target.value)} className={`w-full px-3 py-2.5 border rounded-xl outline-none transition-all ${th.inputBorder}`} />
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.major}</label>
-                <input type="text" placeholder={t.major} value={edu.major} onChange={e => updateEdu(i, 'major', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
+                <input type="text" placeholder={t.major} value={edu.major} onChange={e => updateEdu(i, 'major', e.target.value)} className={`w-full px-3 py-2.5 border rounded-xl outline-none transition-all ${th.inputBorder}`} />
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{t.duration}</label>
-                <input type="text" placeholder={t.eduDurationPh} value={edu.duration} onChange={e => updateEdu(i, 'duration', e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all bg-gray-50 focus:bg-white" />
+                <input type="text" placeholder={t.eduDurationPh} value={edu.duration} onChange={e => updateEdu(i, 'duration', e.target.value)} className={`w-full px-3 py-2.5 border rounded-xl outline-none transition-all ${th.inputBorder}`} />
               </div>
             </div>
             {/* School Logo Upload */}
@@ -463,18 +508,18 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
             )}
           </div>
         ))}
-        <button type="button" onClick={addEdu} className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">{t.addEdu}</button>
+        <button type="button" onClick={addEdu} className={`text-sm font-medium ${th.addWorkEdu}`}>{t.addEdu}</button>
       </section>
 
       {/* Skills */}
       <section>
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
-          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.skills}
         </h2>
         <div className="flex flex-wrap gap-2 mb-3 min-h-[8px]">
           {resume.skills.map((skill, i) => (
-            <span key={i} className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm ${isPersonal ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+            <span key={i} className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm ${th.tagBg}`}>
               {skill}<button type="button" onClick={() => removeSkill(i)} className="ml-2 text-gray-400 hover:text-red-500">&times;</button>
             </span>
           ))}
@@ -482,8 +527,8 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
         <div className="flex gap-2">
           <input type="text" value={skillInput} onChange={e => setSkillInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} placeholder={t.skillPh}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
-          <button type="button" onClick={addSkill} className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">{t.add}</button>
+            className={`flex-1 px-4 py-2.5 border rounded-lg outline-none focus:ring-2 ${isPersonal ? 'focus:ring-orange-400' : 'focus:ring-slate-400'} border-gray-300`} />
+          <button type="button" onClick={addSkill} className={`px-5 py-2.5 text-white rounded-lg text-sm font-medium transition-all ${th.btnPrimary}`}>{t.add}</button>
         </div>
         {showBilingual && (
         <div className="mt-5 pt-4 border-t border-amber-200">
@@ -498,7 +543,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
           <div className="flex gap-2">
             <input type="text" value={skillCnInput} onChange={e => setSkillCnInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkillCn())} placeholder={t.skillCnPh}
-              className="flex-1 px-4 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50" />
+              className={`flex-1 px-4 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50`} />
             <button type="button" onClick={addSkillCn} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-sm font-medium">{t.add}</button>
           </div>
         </div>
@@ -508,7 +553,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       {/* Hobbies */}
       <section>
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
-          <span className="w-1 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500 inline-block" />
+          <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.hobbies}
         </h2>
         <div className="flex flex-wrap gap-2 mb-3 min-h-[8px]">
@@ -521,8 +566,8 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
         <div className="flex gap-2">
           <input type="text" value={hobbyInput} onChange={e => setHobbyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addHobby())} placeholder={t.hobbyPh}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" />
-          <button type="button" onClick={addHobby} className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">{t.add}</button>
+            className={`flex-1 px-4 py-2.5 border rounded-lg outline-none focus:ring-2 ${isPersonal ? 'focus:ring-orange-400' : 'focus:ring-slate-400'} border-gray-300`} />
+          <button type="button" onClick={addHobby} className={`px-5 py-2.5 text-white rounded-lg text-sm font-medium transition-all ${th.btnPrimary}`}>{t.add}</button>
         </div>
         {showBilingual && (
         <div className="mt-5 pt-4 border-t border-amber-200">
@@ -537,7 +582,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
           <div className="flex gap-2">
             <input type="text" value={hobbyCnInput} onChange={e => setHobbyCnInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addHobbyCn())} placeholder={t.hobbyCnPh}
-              className="flex-1 px-4 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50" />
+              className={`flex-1 px-4 py-2.5 border border-amber-300 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50`} />
             <button type="button" onClick={addHobbyCn} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-sm font-medium">{t.add}</button>
           </div>
         </div>
@@ -576,7 +621,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       {/* Submit */}
       <div className="pt-8">
         <button type="submit" disabled={loading}
-          className={`w-full py-4 rounded-2xl text-white font-bold text-lg transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : isPersonal ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:shadow-lg active:scale-[0.99]' : 'bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black hover:shadow-lg active:scale-[0.99]'}`}>
+          className={`w-full py-4 rounded-2xl text-white font-bold text-lg transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : th.submitBtn + ' active:scale-[0.99]'}`}>
           {loading ? t.generating : isPersonal ? t.generatePersonal : t.generateProfessional}
         </button>
       </div>

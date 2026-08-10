@@ -1,12 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import { API_BASE_URL } from '../config'
 import Navbar from '../components/Navbar'
 import ResumeForm from '../components/ResumeForm'
-import ElectricBorder from '../components/reactbits/ElectricBorder'
 
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 
 function ProfessionalForm() {
   const { t, lang } = useLang()
@@ -22,372 +21,171 @@ function ProfessionalForm() {
     timeline_style: 'alternate',
     dark_mode: false,
   })
+  const styleKey = 'resume-style-professional'
+  const styleTimer = useRef(null)
+  const isRestoring = useRef(false)
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(styleKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && parsed.accent_color) {
+          setProStyle(prev => ({ ...prev, ...parsed }))
+          isRestoring.current = true
+        }
+      }
+    } catch {}
+  }, [styleKey])
+
+  useEffect(() => {
+    if (isRestoring.current) { isRestoring.current = false; return }
+    if (styleTimer.current) clearTimeout(styleTimer.current)
+    styleTimer.current = setTimeout(() => {
+      try { localStorage.setItem(styleKey, JSON.stringify(proStyle)) } catch {}
+    }, 500)
+    return () => { if (styleTimer.current) clearTimeout(styleTimer.current) }
+  }, [proStyle, styleKey])
 
   const extraFields = (
-    <section>
-      <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
-        <span className="w-1 h-6 rounded-full bg-gradient-to-b from-gray-600 to-gray-900 inline-block" />
-        {t.proStylePreferences}
-      </h2>
-      <div className="space-y-8">
-        {/* Accent Color */}
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">{t.accentColor}</label>
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            {[
-              { c: '#c9a96e', name: t.colorGold },
-              { c: '#1e40af', name: t.colorNavy },
-              { c: '#059669', name: t.colorEmerald },
-              { c: '#333333', name: t.colorCharcoal },
-              { c: '#7c3aed', name: t.colorViolet },
-              { c: '#dc2626', name: t.colorRuby },
-              { c: '#0891b2', name: t.colorTeal },
-              { c: '#ea580c', name: t.colorCopper },
-            ].map(({ c, name }) => (
-              <button key={c} type="button"
-                onClick={() => setProStyle(prev => ({ ...prev, accent_color: c }))}
-                className={`relative group w-10 h-10 rounded-full border-2 transition-all ${
-                  proStyle.accent_color === c
-                    ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300'
-                    : 'border-gray-200 hover:scale-110'
-                }`}
-                style={{ background: c }}
-                title={name}>
-                {proStyle.accent_color === c && (
-                  <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold drop-shadow-lg">{'\u2713'}</span>
-                )}
-              </button>
-            ))}
-            {/* DIY accent color */}
-            <div className="flex items-center gap-2 ml-1">
-              <input type="color" value={proStyle.accent_color}
-                onChange={e => setProStyle(prev => ({ ...prev, accent_color: e.target.value }))}
-                className="w-10 h-10 rounded-full cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-500 transition-colors" />
-              <div className="text-[10px] text-gray-400 leading-tight">
-                <div className="font-semibold">{t.custom}</div>
-                <div>{t.pickColor}</div>
-              </div>
-            </div>
+    <section className="space-y-8">
+      {/* Accent Color */}
+      <div className="bg-white rounded-2xl p-7 border border-slate-200/80 shadow-sm">
+        <label className="font-geo block text-[11px] font-bold text-slate-500 mb-5 uppercase tracking-[0.15em]">{t.accentColor}</label>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          {[
+            { c: '#c9a96e', name: 'Gold' },
+            { c: '#1e40af', name: 'Navy' },
+            { c: '#059669', name: 'Emerald' },
+            { c: '#333333', name: 'Charcoal' },
+            { c: '#7c3aed', name: 'Violet' },
+            { c: '#dc2626', name: 'Ruby' },
+            { c: '#0891b2', name: 'Teal' },
+            { c: '#ea580c', name: 'Copper' },
+          ].map(({ c, name }) => (
+            <button key={c} type="button" onClick={() => setProStyle(prev => ({ ...prev, accent_color: c }))}
+              className={`relative w-11 h-11 rounded-xl border-2 transition-all active:scale-[0.92] ${proStyle.accent_color === c ? 'border-slate-800 scale-110 ring-2 ring-offset-2 ring-slate-800/15 shadow-md' : 'border-slate-200 hover:scale-110 hover:shadow-sm'}`}
+              style={{ background: c }} title={name}>
+              {proStyle.accent_color === c && <span className="absolute inset-0 flex items-center justify-center text-white text-sm font-bold drop-shadow-lg"></span>}
+            </button>
+          ))}
+          <div className="flex items-center gap-2 ml-2">
+            <input type="color" value={proStyle.accent_color} onChange={e => setProStyle(prev => ({ ...prev, accent_color: e.target.value }))}
+              className="w-11 h-11 rounded-xl cursor-pointer border-2 border-dashed border-slate-300 hover:border-slate-500 transition-colors" />
+            <span className="text-xs text-slate-400 font-medium">Custom</span>
           </div>
-          {/* Preview bar */}
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: proStyle.accent_color }} />
         </div>
+        <div className="h-px rounded-full overflow-hidden bg-slate-100">
+          <div className="h-full rounded-full transition-all" style={{ width: '100%', background: `linear-gradient(90deg, ${proStyle.accent_color}, ${proStyle.accent_color}44)` }} />
+        </div>
+      </div>
 
-        {/* Header Background */}
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">{t.headerBg}</label>
-          <div className="flex flex-wrap items-center gap-3">
-            {[
-              { c: '#1a1a2e', name: t.bgDarkNavy },
-              { c: '#0f172a', name: t.bgMidnight },
-              { c: '#1e293b', name: t.bgSlate },
-              { c: '#292524', name: t.bgEspresso },
-              { c: '#ffffff', name: t.bgWhite },
-              { c: '#f8fafc', name: t.bgSnow },
-            ].map(({ c, name }) => (
-              <button key={c} type="button"
-                onClick={() => setProStyle(prev => ({ ...prev, header_bg: c }))}
-                className={`w-10 h-10 rounded-full border-2 transition-all ${
-                  proStyle.header_bg === c
-                    ? 'border-gray-800 scale-110 ring-2 ring-offset-2 ring-gray-300'
-                    : 'border-gray-200 hover:scale-110'
-                }`}
-                style={{ background: c }}
-                title={name}>
-                {proStyle.header_bg === c && (
-                  <span className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${c === '#ffffff' || c === '#f8fafc' ? 'text-gray-800' : 'text-white'}`}>{'\u2713'}</span>
-                )}
-              </button>
-            ))}
-            <input type="color" value={proStyle.header_bg}
-              onChange={e => setProStyle(prev => ({ ...prev, header_bg: e.target.value }))}
-              className="w-10 h-10 rounded-full cursor-pointer border-2 border-dashed border-gray-300 hover:border-gray-500 transition-colors" />
-          </div>
+      {/* Header Background */}
+      <div className="bg-white rounded-2xl p-7 border border-slate-200/80 shadow-sm">
+        <label className="font-geo block text-[11px] font-bold text-slate-500 mb-5 uppercase tracking-[0.15em]">{t.headerBg}</label>
+        <div className="flex flex-wrap items-center gap-3">
+          {[
+            { c: '#1a1a2e', name: 'Dark Navy' },
+            { c: '#0f172a', name: 'Midnight' },
+            { c: '#1e293b', name: 'Slate' },
+            { c: '#292524', name: 'Espresso' },
+            { c: '#ffffff', name: 'White' },
+            { c: '#f8fafc', name: 'Snow' },
+          ].map(({ c, name }) => (
+            <button key={c} type="button" onClick={() => setProStyle(prev => ({ ...prev, header_bg: c }))}
+              className={`relative w-11 h-11 rounded-xl border-2 transition-all active:scale-[0.92] ${proStyle.header_bg === c ? 'border-slate-800 scale-110 ring-2 ring-offset-2 ring-slate-800/15 shadow-md' : 'border-slate-200 hover:scale-110 hover:shadow-sm'}`}
+              style={{ background: c }} title={name}>
+              {proStyle.header_bg === c && <span className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${c === '#ffffff' || c === '#f8fafc' ? 'text-slate-800' : 'text-white'}`}></span>}
+            </button>
+          ))}
+          <input type="color" value={proStyle.header_bg} onChange={e => setProStyle(prev => ({ ...prev, header_bg: e.target.value }))}
+            className="w-11 h-11 rounded-xl cursor-pointer border-2 border-dashed border-slate-300 hover:border-slate-500 transition-colors" />
         </div>
+      </div>
 
-        {/* UI Style Presets */}
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">{t.proUiStyle}</label>
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { value: 'elegant', emoji: '\u{1F451}', desc: t.proElegantDesc, accent: '#c9a96e',
-                preview: (
-                  <div className="w-full h-16 rounded-lg overflow-hidden relative" style={{ background: '#fafafa' }}>
-                    <div className="h-4" style={{ background: '#1a1a2e' }}>
-                      <div className="h-0.5 mt-1.5 mx-2 bg-[#c9a96e] opacity-60 w-1/3" />
-                    </div>
-                    <div className="px-2 py-1 space-y-0.5">
-                      <div className="h-0.5 bg-gray-300 w-2/3" />
-                      <div className="h-0.5 bg-gray-200 w-1/2" />
-                      <div className="mt-1 h-0.5 bg-[#c9a96e]/40 w-full" />
-                    </div>
-                  </div>
-                ) },
-              { value: 'minimal', emoji: '\u{1F4F0}', desc: t.proMinimalDesc, accent: '#333',
-                preview: (
-                  <div className="w-full h-16 rounded-lg overflow-hidden bg-white border border-gray-200 relative">
-                    <div className="px-2 py-2">
-                      <div className="h-0.5 bg-gray-800 w-1/4 mb-1" />
-                      <div className="h-0.5 bg-gray-400 w-1/3" />
-                    </div>
-                    <div className="px-2 space-y-0.5">
-                      <div className="h-0.5 bg-gray-200 w-full" />
-                      <div className="h-0.5 bg-gray-100 w-3/4" />
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200" />
-                  </div>
-                ) },
-              { value: 'corporate', emoji: '\u{1F3E2}', desc: t.proCorporateDesc, accent: '#1e40af',
-                preview: (
-                  <div className="w-full h-16 rounded-lg overflow-hidden relative" style={{ background: '#f8fafc' }}>
-                    <div className="h-4" style={{ background: '#0f172a' }}>
-                      <div className="h-0.5 mt-1.5 mx-2 w-1/4" style={{ background: '#1e40af' }} />
-                    </div>
-                    <div className="px-2 py-1 space-y-0.5">
-                      <div className="h-1 rounded-sm bg-white border border-gray-200 w-full" />
-                      <div className="h-0.5 bg-gray-300 w-1/2" />
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, #1e40af, #3b82f6, #1e40af)' }} />
-                  </div>
-                ) },
-            ].map(s => (
-              <button key={s.value} type="button"
-                onClick={() => setProStyle(prev => ({
-                  ...prev,
-                  ui_style: s.value,
-                  accent_color: s.accent,
-                }))}
-                className={`p-4 rounded-2xl border-2 text-center transition-all ${
-                  proStyle.ui_style === s.value
-                    ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
-                    : 'border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50'
-                }`}>
-                <div className="mb-2">{s.preview}</div>
-                <div className="text-2xl mb-1">{s.emoji}</div>
-                <div className="text-sm font-semibold text-gray-800">{t[s.value]}</div>
-                <div className="text-[10px] text-gray-400 mt-1">{s.desc}</div>
-                {proStyle.ui_style === s.value && (
-                  <div className="mt-2 text-[10px] font-medium text-gray-600">{'\u2713'} Selected</div>
-                )}
-              </button>
-            ))}
-          </div>
+      {/* UI Style */}
+      <div className="bg-white rounded-2xl p-7 border border-slate-200/80 shadow-sm">
+        <label className="font-geo block text-[11px] font-bold text-slate-500 mb-5 uppercase tracking-[0.15em]">{t.proUiStyle}</label>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { value: 'elegant', emoji: '', desc: '优雅奢华' },
+            { value: 'minimal', emoji: '', desc: '极简现代' },
+            { value: 'corporate', emoji: '', desc: '企业商务' },
+          ].map(s => (
+            <button key={s.value} type="button" onClick={() => setProStyle(prev => ({ ...prev, ui_style: s.value }))}
+              className={`p-5 rounded-2xl border-2 text-center transition-all active:scale-[0.96] ${proStyle.ui_style === s.value ? 'border-slate-800 bg-slate-50 shadow-lg shadow-slate-200/50' : 'border-slate-200/60 bg-white hover:border-slate-400 hover:shadow-md'}`}>
+              <div className="text-4xl mb-3">{s.emoji}</div>
+              <div className="text-sm font-bold text-slate-800">{t[s.value]}</div>
+              <div className="text-xs text-slate-500 mt-1">{s.desc}</div>
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Content Layout */}
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.contentLayout || 'Content Layout'}</label>
-          <p className="text-[10px] text-gray-400 italic mb-3">{t.contentLayoutHint || 'Choose how your resume content is organized'}</p>
-          <div className="grid grid-cols-3 gap-4">
-            {/* Classic */}
-            <button type="button"
-              onClick={() => setProStyle(prev => ({ ...prev, content_layout: 'classic' }))}
-              className={`p-4 rounded-2xl border-2 text-center transition-all ${
-                proStyle.content_layout === 'classic'
-                  ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
-                  : 'border-gray-200 bg-white hover:border-gray-400'
-              }`}>
-              {/* Visual preview */}
-              <div className="h-16 mb-3 flex flex-col items-center justify-center gap-1">
-                <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-gray-400" />
-                <div className="w-16 h-1 bg-gray-300 rounded" />
-                <div className="w-12 h-1 bg-gray-200 rounded" />
-                <div className="w-14 h-1 bg-gray-200 rounded" />
-              </div>
-              <div className="text-sm font-semibold text-gray-800">{t.layoutClassic || 'Classic'}</div>
-              <div className="text-[10px] text-gray-400 mt-1">{t.layoutClassicDesc || 'Avatar on top, single column'}</div>
-              {proStyle.content_layout === 'classic' && (
-                <div className="mt-2 text-[10px] font-medium text-gray-600">{'\u2713'} Selected</div>
-              )}
-            </button>
-            {/* Poster */}
-            <button type="button"
-              onClick={() => setProStyle(prev => ({ ...prev, content_layout: 'poster' }))}
-              className={`p-4 rounded-2xl border-2 text-center transition-all ${
-                proStyle.content_layout === 'poster'
-                  ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
-                  : 'border-gray-200 bg-white hover:border-gray-400'
-              }`}>
-              {/* Visual preview */}
-              <div className="h-16 mb-3 relative">
-                <div className="w-full h-10 bg-gradient-to-r from-gray-300 to-gray-200 rounded-t" />
-                <div className="absolute bottom-1 left-3 w-6 h-6 rounded-full bg-gray-400 border-2 border-white shadow" />
-                <div className="mt-1 ml-1">
-                  <div className="w-12 h-1 bg-gray-300 rounded" />
-                </div>
-              </div>
-              <div className="text-sm font-semibold text-gray-800">{t.layoutPoster || 'Poster'}</div>
-              <div className="text-[10px] text-gray-400 mt-1">{t.layoutPosterDesc || 'Banner + avatar overlay'}</div>
-              {proStyle.content_layout === 'poster' && (
-                <div className="mt-2 text-[10px] font-medium text-gray-600">{'\u2713'} Selected</div>
-              )}
-            </button>
-            {/* Sidebar */}
-            <button type="button"
-              onClick={() => setProStyle(prev => ({ ...prev, content_layout: 'sidebar' }))}
-              className={`p-4 rounded-2xl border-2 text-center transition-all ${
-                proStyle.content_layout === 'sidebar'
-                  ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
-                  : 'border-gray-200 bg-white hover:border-gray-400'
-              }`}>
-              {/* Visual preview */}
-              <div className="h-16 mb-3 flex gap-1">
-                <div className="w-6 bg-gray-300 rounded-l flex flex-col items-center pt-2 gap-1">
-                  <div className="w-4 h-4 rounded-full bg-gray-400" />
-                  <div className="w-3 h-0.5 bg-gray-400 rounded" />
-                  <div className="w-4 h-0.5 bg-gray-400 rounded" />
-                  <div className="w-3 h-0.5 bg-gray-400 rounded" />
-                </div>
-                <div className="flex-1 py-1 pr-1 flex flex-col gap-1">
-                  <div className="w-full h-1.5 bg-gray-200 rounded" />
-                  <div className="w-full h-1.5 bg-gray-200 rounded" />
-                  <div className="w-3/4 h-1 bg-gray-100 rounded" />
-                  <div className="w-full h-1.5 bg-gray-200 rounded" />
-                </div>
-              </div>
-              <div className="text-sm font-semibold text-gray-800">{t.layoutSidebar || 'Sidebar'}</div>
-              <div className="text-[10px] text-gray-400 mt-1">{t.layoutSidebarDesc || 'Left sidebar + right content'}</div>
-              {proStyle.content_layout === 'sidebar' && (
-                <div className="mt-2 text-[10px] font-medium text-gray-600">{'\u2713'} Selected</div>
-              )}
-            </button>
-          </div>
-          {/* Poster-specific options */}
-          {proStyle.content_layout === 'poster' && (
-            <div className="mt-3 space-y-3">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-[10px] text-amber-700">{t.posterTip}</p>
-              </div>
-              {/* Banner Image Upload */}
-              <div>
-                <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.bannerImage || 'Banner Image'}</label>
-                <p className="text-[10px] text-gray-400 italic mb-2">{t.bannerImageHint || 'Upload a landscape photo for the hero banner background'}</p>
-                <div className="flex items-center gap-3">
-                  {proStyle.header_image && (
-                    <img src={proStyle.header_image} alt="banner" className="w-24 h-14 object-cover rounded-lg border border-gray-200" />
-                  )}
-                  <label className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-600 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors text-xs font-medium">
-                    {'\u{1F5BC}'} {t.uploadBanner || 'Upload Banner'}
-                    <input type="file" accept="image/*" className="hidden" onChange={e => {
-                      const file = e.target.files[0]
-                      if (file) {
-                        if (file.size > MAX_IMAGE_SIZE) {
-                          alert(t.imageTooLarge)
-                          return
-                        }
-                        const reader = new FileReader()
-                        reader.onload = ev => setProStyle(prev => ({ ...prev, header_image: ev.target.result }))
-                        reader.readAsDataURL(file)
-                      }
-                    }} />
-                  </label>
-                  {proStyle.header_image && (
-                    <button type="button" onClick={() => setProStyle(prev => ({ ...prev, header_image: '' }))} className="text-red-400 hover:text-red-600 text-xs">{t.clearImage || 'Clear'}</button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          {/* Sidebar-specific hint */}
-          {proStyle.content_layout === 'sidebar' && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-[10px] text-blue-700">{t.sidebarHint || 'Sidebar layout places your avatar, contact info and skills on the left, with work experience and education on the right.'}</p>
-            </div>
-          )}
+      {/* Content Layout */}
+      <div className="bg-white rounded-2xl p-7 border border-slate-200/80 shadow-sm">
+        <label className="font-geo block text-[11px] font-bold text-slate-500 mb-5 uppercase tracking-[0.15em]">{t.contentLayout}</label>
+        <div className="grid grid-cols-3 gap-4">
+          <button type="button" onClick={() => setProStyle(prev => ({ ...prev, content_layout: 'classic' }))}
+            className={`p-5 rounded-2xl border-2 text-center transition-all active:scale-[0.96] ${proStyle.content_layout === 'classic' ? 'border-slate-800 bg-slate-50 shadow-md' : 'border-slate-200/60 bg-white hover:border-slate-400'}`}>
+            <div className="text-3xl mb-2"></div>
+            <div className="text-sm font-bold">{t.layoutClassic}</div>
+          </button>
+          <button type="button" onClick={() => setProStyle(prev => ({ ...prev, content_layout: 'poster' }))}
+            className={`p-5 rounded-2xl border-2 text-center transition-all active:scale-[0.96] ${proStyle.content_layout === 'poster' ? 'border-slate-800 bg-slate-50 shadow-md' : 'border-slate-200/60 bg-white hover:border-slate-400'}`}>
+            <div className="text-3xl mb-2"></div>
+            <div className="text-sm font-bold">{t.layoutPoster}</div>
+          </button>
+          <button type="button" onClick={() => setProStyle(prev => ({ ...prev, content_layout: 'sidebar' }))}
+            className={`p-5 rounded-2xl border-2 text-center transition-all active:scale-[0.96] ${proStyle.content_layout === 'sidebar' ? 'border-slate-800 bg-slate-50 shadow-md' : 'border-slate-200/60 bg-white hover:border-slate-400'}`}>
+            <div className="text-3xl mb-2"></div>
+            <div className="text-sm font-bold">{t.layoutSidebar}</div>
+          </button>
         </div>
+      </div>
 
-        {/* Timeline Style */}
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.timelineStyle || 'Timeline Style'}</label>
-          <p className="text-[10px] text-gray-400 italic mb-3">{t.timelineStyleHint || 'Choose how work experience is displayed'}</p>
-          <div className="flex gap-4">
-            <button type="button"
-              onClick={() => setProStyle(prev => ({ ...prev, timeline_style: 'alternate' }))}
-              className={`flex-1 p-3 rounded-2xl border-2 text-center transition-all ${
-                proStyle.timeline_style === 'alternate'
-                  ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
-                  : 'border-gray-200 bg-white hover:border-gray-400'
-              }`}>
-              {/* Visual preview: alternating */}
-              <div className="h-10 mb-2 flex items-center justify-center gap-1">
-                <div className="w-5 h-1.5 bg-gray-300 rounded" />
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                <div className="w-5" />
-              </div>
-              <div className="h-4 mb-2 flex items-center justify-center gap-1">
-                <div className="w-5" />
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                <div className="w-5 h-1.5 bg-gray-300 rounded" />
-              </div>
-              <div className="text-xs font-semibold text-gray-800">{t.timelineAlternate || 'Alternating'}</div>
-              <div className="text-[10px] text-gray-400 mt-1">{t.timelineAlternateDesc || 'Left-right zigzag'}</div>
-              {proStyle.timeline_style === 'alternate' && (
-                <div className="mt-1 text-[10px] font-medium text-gray-600">{'\u2713'}</div>
-              )}
-            </button>
-            <button type="button"
-              onClick={() => setProStyle(prev => ({ ...prev, timeline_style: 'linear' }))}
-              className={`flex-1 p-3 rounded-2xl border-2 text-center transition-all ${
-                proStyle.timeline_style === 'linear'
-                  ? 'border-gray-800 bg-gray-50 ring-2 ring-gray-300 ring-offset-1'
-                  : 'border-gray-200 bg-white hover:border-gray-400'
-              }`}>
-              {/* Visual preview: linear */}
-              <div className="h-10 mb-2 flex items-center justify-center gap-1">
-                <div className="w-1 h-8 bg-gray-300 rounded" />
-                <div className="flex flex-col gap-1 items-start">
-                  <div className="w-8 h-1.5 bg-gray-300 rounded" />
-                  <div className="w-6 h-1 bg-gray-200 rounded" />
-                </div>
-              </div>
-              <div className="text-xs font-semibold text-gray-800">{t.timelineLinear || 'Linear'}</div>
-              <div className="text-[10px] text-gray-400 mt-1">{t.timelineLinearDesc || 'Top to bottom'}</div>
-              {proStyle.timeline_style === 'linear' && (
-                <div className="mt-1 text-[10px] font-medium text-gray-600">{'\u2713'}</div>
-              )}
-            </button>
-          </div>
+      {/* Timeline */}
+      <div className="bg-white rounded-2xl p-7 border border-slate-200/80 shadow-sm">
+        <label className="font-geo block text-[11px] font-bold text-slate-500 mb-5 uppercase tracking-[0.15em]">{t.timelineStyle}</label>
+        <div className="grid grid-cols-2 gap-4">
+          <button type="button" onClick={() => setProStyle(prev => ({ ...prev, timeline_style: 'alternate' }))}
+            className={`p-5 rounded-2xl border-2 text-center transition-all active:scale-[0.96] ${proStyle.timeline_style === 'alternate' ? 'border-slate-800 bg-slate-50 shadow-md' : 'border-slate-200/60 bg-white hover:border-slate-400'}`}>
+            <div className="text-2xl mb-2"></div>
+            <div className="text-sm font-bold">{t.timelineAlternate}</div>
+          </button>
+          <button type="button" onClick={() => setProStyle(prev => ({ ...prev, timeline_style: 'linear' }))}
+            className={`p-5 rounded-2xl border-2 text-center transition-all active:scale-[0.96] ${proStyle.timeline_style === 'linear' ? 'border-slate-800 bg-slate-50 shadow-md' : 'border-slate-200/60 bg-white hover:border-slate-400'}`}>
+            <div className="text-2xl mb-2"></div>
+            <div className="text-sm font-bold">{t.timelineLinear}</div>
+          </button>
         </div>
-        {/* Dark Mode Toggle */}
+      </div>
+
+      {/* Dark Mode */}
+      <div className="flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl px-7 py-5 shadow-lg">
         <div>
-          <div className="flex items-center justify-between bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl px-6 py-4">
-            <div>
-              <p className="text-sm font-semibold text-white">{lang === 'zh' ? '\u{1F319} \u6697\u8272\u6a21\u5f0f' : '\u{1F319} Dark Mode'}</p>
-              <p className="text-xs text-gray-400 mt-1">{lang === 'zh' ? '\u8bbf\u5ba2\u7cfb\u7edf\u4e3a\u6697\u8272\u6a21\u5f0f\u65f6\u81ea\u52a8\u5207\u6362' : 'Auto-switch when visitor uses dark mode'}</p>
-            </div>
-            <button type="button" onClick={() => setProStyle(prev => ({ ...prev, dark_mode: !prev.dark_mode }))}
-              className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ml-4 ${proStyle.dark_mode ? 'bg-indigo-500' : 'bg-gray-600'}`}>
-              <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${proStyle.dark_mode ? 'translate-x-7' : 'translate-x-0.5'}`} />
-            </button>
-          </div>
+          <p className="text-sm font-bold text-white"> {lang === 'zh' ? '暗色模式' : 'Dark Mode'}</p>
+          <p className="text-xs text-slate-400 mt-1">{lang === 'zh' ? '访客系统为暗色模式时自动切换' : 'Auto-switch when visitor uses dark mode'}</p>
         </div>
+        <button type="button" onClick={() => setProStyle(prev => ({ ...prev, dark_mode: !prev.dark_mode }))}
+          className={`relative w-14 h-7 rounded-full transition-colors ${proStyle.dark_mode ? 'bg-slate-700' : 'bg-slate-600'}`}>
+          <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${proStyle.dark_mode ? 'translate-x-7' : 'translate-x-0.5'}`} />
+        </button>
       </div>
     </section>
   )
 
-  const handleAIStyleUpdate = (updates) => {
-    setProStyle(prev => ({ ...prev, ...updates }))
-  }
+  const handleAIStyleUpdate = (updates) => { setProStyle(prev => ({ ...prev, ...updates })) }
 
   const handleSubmit = async (resumeData, aiEffects, sectionOrder) => {
     const response = await fetch(`${API_BASE_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mode: 'professional',
-        resume: resumeData,
-        pro_style: { ...proStyle, section_order: sectionOrder || [] },
-        lang,
-        ai_effects: aiEffects || [],
-        section_order: sectionOrder || [],
-      }),
+      body: JSON.stringify({ mode: 'professional', resume: resumeData, pro_style: { ...proStyle, section_order: sectionOrder || [] }, lang, ai_effects: aiEffects || [], section_order: sectionOrder || [] }),
     })
     if (!response.ok) {
       let errMsg = 'Generation failed'
-      try {
-        const errData = await response.json()
-        if (errData.detail) errMsg = errData.detail
-      } catch { /* ignore parse error */ }
+      try { const errData = await response.json(); if (errData.detail) errMsg = errData.detail } catch {}
       throw new Error(errMsg)
     }
     const { html } = await response.json()
@@ -395,118 +193,91 @@ function ProfessionalForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-gray-100/70 relative overflow-hidden">
-      {/* Animated background - elegant corporate style */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Subtle gradient orbs */}
-        <div className="absolute top-10 -right-20 w-[350px] h-[350px] bg-blue-200/25 rounded-full blur-[80px] animate-[proBreathe_10s_ease-in-out_infinite]" />
-        <div className="absolute bottom-20 -left-16 w-[300px] h-[300px] bg-slate-300/20 rounded-full blur-[70px] animate-[proBreathe_12s_ease-in-out_infinite_4s]" />
-        <div className="absolute top-2/3 right-1/4 w-[250px] h-[250px] bg-amber-200/10 rounded-full blur-[60px] animate-[proBreathe_9s_ease-in-out_infinite_2s]" />
-        {/* Fine grid pattern */}
-        <div className="absolute inset-0 opacity-[0.025]" style={{
-          backgroundImage: 'linear-gradient(rgba(30,41,59,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,0.3) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
-        }} />
-        {/* Diagonal accent lines */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] opacity-[0.03]" style={{
-          backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(30,64,175,0.3) 40px, rgba(30,64,175,0.3) 41px)',
-        }} />
-        {/* Floating dots */}
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="absolute rounded-full animate-[proFloat_14s_ease-in-out_infinite]"
-            style={{
-              width: 2 + (i % 2) * 2,
-              height: 2 + (i % 2) * 2,
-              left: `${15 + (i * 14) % 70}%`,
-              top: `${10 + (i * 17) % 70}%`,
-              background: i % 2 === 0 ? 'rgba(30,64,175,0.15)' : 'rgba(201,169,110,0.2)',
-              animationDelay: `${i * 2}s`,
-              animationDuration: `${12 + (i % 3) * 3}s`,
-            }} />
-        ))}
+    <div className="min-h-screen bg-[#F8F7F4] relative overflow-x-hidden">
+      {/* ===== Background Design Elements ===== */}
+      {/* Fine geometric grid */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
+      
+      {/* Top gold accent line */}
+      <div className="fixed top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-600/30 to-transparent pointer-events-none z-50" />
+      
+      {/* Subtle warm vignette */}
+      <div className="fixed inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(201,169,110,0.04) 0%, transparent 60%)' }} />
 
-        {/* 3D Wireframe geometric composition (cube + sphere rotating) */}
-        <div className="hidden lg:block absolute top-28 right-6 w-[180px] h-[180px]" style={{ perspective: '600px' }}>
-          <div className="w-full h-full animate-[geoSpin_20s_linear_infinite]" style={{ transformStyle: 'preserve-3d' }}>
-            {/* Wireframe cube faces */}
-            {[
-              { t: 'rotateY(0deg) translateZ(60px)', border: 'rgba(30,64,175,0.12)' },
-              { t: 'rotateY(90deg) translateZ(60px)', border: 'rgba(30,64,175,0.10)' },
-              { t: 'rotateY(180deg) translateZ(60px)', border: 'rgba(30,64,175,0.08)' },
-              { t: 'rotateY(270deg) translateZ(60px)', border: 'rgba(30,64,175,0.10)' },
-              { t: 'rotateX(90deg) translateZ(60px)', border: 'rgba(201,169,110,0.12)' },
-              { t: 'rotateX(-90deg) translateZ(60px)', border: 'rgba(201,169,110,0.10)' },
-            ].map((face, i) => (
-              <div key={i} className="absolute inset-[30px] border-2 rounded-sm"
-                style={{
-                  transform: face.t,
-                  backfaceVisibility: 'visible',
-                  borderColor: face.border,
-                  transformStyle: 'preserve-3d',
-                }} />
-            ))}
-            {/* Inner sphere (circle outline) */}
-            <div className="absolute inset-[45px] rounded-full border-2 animate-[geoSpinReverse_12s_linear_infinite]"
-              style={{ borderColor: 'rgba(201,169,110,0.15)', transformStyle: 'preserve-3d' }} />
-            <div className="absolute inset-[55px] rounded-full border"
-              style={{ borderColor: 'rgba(30,64,175,0.08)', transform: 'rotateX(60deg)' }} />
-            <div className="absolute inset-[55px] rounded-full border"
-              style={{ borderColor: 'rgba(30,64,175,0.08)', transform: 'rotateY(60deg)' }} />
-          </div>
-        </div>
-        {/* Second smaller geometric - wireframe triangle */}
-        <div className="hidden lg:block absolute bottom-40 right-20 w-[100px] h-[100px] opacity-[0.06]">
-          <div className="w-full h-full animate-[geoSpin_15s_linear_infinite_reverse]" style={{ perspective: '400px' }}>
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              <polygon points="50,5 95,90 5,90" fill="none" stroke="rgba(30,64,175,0.6)" strokeWidth="1.5" />
-              <polygon points="50,20 80,80 20,80" fill="none" stroke="rgba(201,169,110,0.5)" strokeWidth="1" />
-              <circle cx="50" cy="55" r="20" fill="none" stroke="rgba(30,64,175,0.4)" strokeWidth="0.8" />
-            </svg>
-          </div>
-        </div>
+      {/* Decorative corner marks */}
+      <div className="fixed top-20 right-8 w-12 h-12 pointer-events-none opacity-20">
+        <div className="absolute top-0 right-0 w-6 h-px bg-slate-800" />
+        <div className="absolute top-0 right-0 w-px h-6 bg-slate-800" />
       </div>
-      <style>{`
-        @keyframes proBreathe {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.06); }
-        }
-        @keyframes proFloat {
-          0%, 100% { transform: translate(0, 0); opacity: 0.2; }
-          33% { transform: translate(8px, -20px); opacity: 0.4; }
-          66% { transform: translate(-6px, -35px); opacity: 0.15; }
-        }
-        @keyframes geoSpin {
-          from { transform: rotateX(15deg) rotateY(0deg); }
-          to { transform: rotateX(15deg) rotateY(360deg); }
-        }
-        @keyframes geoSpinReverse {
-          from { transform: rotateX(-10deg) rotateY(360deg) rotateZ(0deg); }
-          to { transform: rotateX(-10deg) rotateY(0deg) rotateZ(360deg); }
-        }
-      `}</style>
+      <div className="fixed bottom-20 left-8 w-12 h-12 pointer-events-none opacity-20">
+        <div className="absolute bottom-0 left-0 w-6 h-px bg-slate-800" />
+        <div className="absolute bottom-0 left-0 w-px h-6 bg-slate-800" />
+      </div>
+
+      {/* ===== Photographic Decorative Elements ===== */}
+      {/* Executive stationery flowing in from top-right corner */}
+      <img
+        src="/images/decor-elite-tr.png"
+        alt=""
+        draggable={false}
+        className="fixed -top-8 -right-8 w-[420px] h-[420px] object-contain pointer-events-none select-none mix-blend-multiply opacity-90"
+        style={{
+          maskImage: 'radial-gradient(circle at 100% 0%, black 52%, transparent 76%)',
+          WebkitMaskImage: 'radial-gradient(circle at 100% 0%, black 52%, transparent 76%)',
+        }}
+      />
+      {/* Refined objects flowing in from bottom-left corner */}
+      <img
+        src="/images/decor-elite-bl.png"
+        alt=""
+        draggable={false}
+        className="fixed -bottom-10 -left-10 w-[360px] h-[360px] object-contain pointer-events-none select-none mix-blend-multiply opacity-80"
+        style={{
+          maskImage: 'radial-gradient(circle at 0% 100%, black 52%, transparent 76%)',
+          WebkitMaskImage: 'radial-gradient(circle at 0% 100%, black 52%, transparent 76%)',
+        }}
+      />
+
       <Navbar />
-      <main className="relative z-10 max-w-3xl mx-auto px-6 py-10">
-        {/* ElectricBorder - floating status card with lightning border */}
-        <div className="hidden lg:block fixed top-[35%] right-[15%] w-[160px] z-0 opacity-[0.6]">
-          <ElectricBorder color="#1e40af" speed={0.8} chaos={0.08} borderRadius={12}>
-            <div className="p-4 bg-white/60 backdrop-blur-sm rounded-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                <span className="text-[10px] font-semibold text-gray-700 uppercase tracking-wider">Status</span>
-              </div>
-              <div className="text-xl font-bold text-gray-800">Ready</div>
-              <div className="text-[10px] text-gray-500 mt-1">Professional mode</div>
-            </div>
-          </ElectricBorder>
-        </div>
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-lg shadow-lg shadow-gray-300">{'\u{1F4BC}'}</div>
-            <h1 className="text-3xl font-extrabold text-gray-800">{t.professionalFormTitle}</h1>
+      
+      {/* ===== Main Content ===== */}
+      <main className="relative z-10 max-w-3xl mx-auto px-6 py-12">
+        {/* Hero Section */}
+        <div className="mb-14 relative">
+          {/* Decorative top rule */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-10 h-px bg-slate-800" />
+            <span className="font-geo text-[10px] font-bold text-slate-400 uppercase tracking-[0.35em]">Elite Resume</span>
+            <div className="flex-1 h-px bg-slate-200" />
           </div>
-          <p className="text-gray-500 ml-[52px]">{t.professionalFormDesc}</p>
+          
+          <h1 className="font-elegant text-6xl md:text-7xl font-bold text-slate-900 leading-[0.9] tracking-tight">
+            {lang === 'zh' ? (
+              <>
+                <span>职业</span>
+                <span className="font-elegant italic font-normal text-slate-400 ml-2">精英</span>
+              </>
+            ) : (
+              <>
+                <span>Elite </span>
+                <span className="font-elegant italic font-normal text-slate-400">Professional</span>
+              </>
+            )}
+          </h1>
+          
+          <p className="text-sm text-slate-500 mt-5 max-w-md leading-relaxed">
+            {lang === 'zh' ? '专业、精致、可信赖的简历设计，打造令人印象深刻的职业形象' : 'Professional, refined, trustworthy resume design for lasting impressions'}
+          </p>
+          
+          {/* Gold accent rule */}
+          <div className="flex items-center gap-3 mt-6">
+            <div className="w-8 h-px bg-slate-800" />
+            <div className="w-4 h-px bg-amber-600/50" />
+            <div className="w-2 h-px bg-amber-600/25" />
+          </div>
         </div>
-        <ResumeForm mode="professional" onSubmit={handleSubmit} extraFields={extraFields} currentStyle={proStyle} onStyleUpdateFromAI={handleAIStyleUpdate} />
+        
+        <ResumeForm mode="professional" onSubmit={handleSubmit} extraFields={extraFields} currentStyle={proStyle} onStyleUpdateFromAI={handleAIStyleUpdate} theme="professional" />
       </main>
     </div>
   )
