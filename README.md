@@ -2,7 +2,7 @@
 
 > 把你的简历变成一个精美的个人网站，支持中英双语。
 
-[![Status](https://img.shields.io/badge/status-work_in_progress-yellow)](https://github.com/penguin0821/resume-to-website)
+[![Status](https://img.shields.io/badge/status-complete-brightgreen)](https://github.com/penguin0821/resume-to-website)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ## 项目简介
@@ -17,16 +17,20 @@ Resume-to-Website 是一个全栈 Web 应用，帮助用户将简历信息快速
 ## 功能特性
 
 - 两种网站风格：个性创意 / 职业精英
+- **设计系统驱动**：CSS tokens / 排版规范 / 组件类，生成页为语义化 HTML（非内联样式拼接），含滚动渐显动效
 - 表单录入简历信息（工作经历、教育背景、技能、爱好）
 - 头像上传（支持本地上传 + URL 链接，2MB 大小限制）
 - 背景图片上传（个性创意模式）
-- 4 种 UI 风格预设：卡通风、极简风、艺术风、复古风
+- 个性创意风 3 套 UI 预设：编辑风 / 工作室 / 极光风（可视化缩略图选择）
 - **多效果组合颜色系统**：纯色 / 渐变 / 阴影 / 点缀 / 拼接，支持多效果叠加（如渐变+阴影、拼接+点缀）
 - **10 种点缀花纹**：圆点、四叶草、空心圆、铜钱纹、五角星、四角星、菱形、十字、爱心、波浪
 - **点缀布局模式**：均匀 / 随机（随机布局每次生成不同效果）
 - **拼接模式**：横向 / 斜向方向 + 间隔重复（如红蓝红蓝红蓝）
-- 职业精英风支持 3 种 UI 预设：优雅 / 极简 / 商务，可自定义点缀色和头部背景
+- 职业精英风 3 套 UI 预设：高管 / 瑞士 / 海报，可自定义点缀色和头部背景
 - 职业精英风支持 3 种内容布局：经典 / 海报 / 侧边栏
+- **表单实时预览**：桌面端侧边 live preview iframe，防抖调用生成接口即时渲染（可切换桌面/移动宽度）
+- **下载 PDF**：预览页一键调起浏览器打印导出 PDF（生成站含专用 @media print 样式）
+- **分享友好**：生成 HTML 自带 OG / meta 标签；生成站含移动端响应式断点
 - **AI 风格助手**：通过 LiteLLM 统一接口对话调整设计风格，支持 8 个厂商 13+ 模型
 - **AI 特效**：基于 LiteLLM 多模型生成动态 CSS/JS 特效，含安全清洗机制
 - **自定义模型输入**：支持任意 LiteLLM 兼容模型 ID（provider/model 格式）
@@ -104,6 +108,7 @@ resume-to-website/
 │       ├── ai_service.py           # AI 特效服务（LiteLLM 多模型）
 │       ├── deploy_service.py       # 部署服务（GitHub Pages / Netlify）
 │       └── generators/
+│       │   ├── design_system.py    # 共享设计系统（tokens/组件类/reveal/print/OG）
 │       │   ├── i18n.py             # 双语工具（切换脚本、标签字典）
 │       │   ├── personal.py         # 个性创意风格生成器
 │       │   ├── professional.py     # 职业精英风格生成器
@@ -116,6 +121,7 @@ resume-to-website/
 │       ├── LanguageContext.jsx     # 语言状态管理
 │       ├── components/
 │       │   ├── Navbar.jsx          # 导航栏（含 EN/CN 切换按钮）
+│       │   ├── FormShell.jsx       # 表单壳（sticky 导航+进度+live preview）
 │       │   ├── ResumeForm.jsx      # 简历表单（核心组件）
 │       │   ├── AIChatPanel.jsx     # AI 风格助手面板
 │       │   ├── SectionOrder.jsx    # 拖拽板块排序
@@ -140,8 +146,9 @@ resume-to-website/
 2. 填写基本信息（姓名、职位、邮箱等）
 3. 添加工作经历、教育背景、技能、爱好
 4. （个性创意模式）设置配色、UI 风格、关键词、背景图
-5. 点击生成按钮
-6. 在预览页查看效果，满意后点击"下载 HTML"
+5. 桌面端可开启实时预览，边填边看生成效果
+6. 点击生成按钮
+7. 在预览页查看效果，满意后下载 HTML / 导出 PDF，或一键部署
 
 ### 双语网站
 
@@ -155,10 +162,11 @@ resume-to-website/
 - [x] AI 多模型支持（LiteLLM 统一接口，8 厂商 13+ 模型，自定义模型 ID）
 - [x] AI 特效（多厂商 API，用户自主申请 Key）
 - [x] 一键部署到 GitHub Pages / Netlify
+- [x] 6 套网站模板（编辑风/工作室/极光风 + 高管/瑞士/海报）
+- [x] 移动端响应式优化（生成站含响应式断点 + 打印样式）
+- [x] 表单实时预览 + PDF 导出
 - [ ] AI 简历解析（上传 PDF/Word 自动提取信息）
-- [ ] 更多网站模板和风格
 - [ ] 在线编辑器（实时调整生成网站样式）
-- [ ] 移动端响应式优化
 
 ## 贡献
 
