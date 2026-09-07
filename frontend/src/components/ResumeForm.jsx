@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLang } from '../LanguageContext'
 import SectionOrder from './SectionOrder'
 import AIChatPanel from './AIChatPanel'
+import FormShell from './FormShell'
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
 const DRAFT_DEBOUNCE = 800 // ms
 
-function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFromAI, theme = 'personal' }) {
+function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFromAI, theme = 'personal', generatePreview }) {
   const { t, lang } = useLang()
   
   // Theme configuration
@@ -110,6 +111,39 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
   // AI Effects state
   const [aiEffects, setAiEffects] = useState([])
   const [sectionOrder, setSectionOrder] = useState([]) // restored from draft on mount
+
+  // ---- Live preview (debounced) ----
+  const [previewHtml, setPreviewHtml] = useState('')
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const previewTimer = useRef(null)
+  useEffect(() => {
+    if (typeof generatePreview !== 'function') return
+    if (!resume.name || !resume.title) { setPreviewHtml(''); return }
+    if (previewTimer.current) clearTimeout(previewTimer.current)
+    previewTimer.current = setTimeout(async () => {
+      setPreviewLoading(true)
+      try {
+        const html = await generatePreview(resume, aiEffects, sectionOrder)
+        setPreviewHtml(html || '')
+      } catch { /* ignore transient preview errors */ }
+      finally { setPreviewLoading(false) }
+    }, 700)
+    return () => { if (previewTimer.current) clearTimeout(previewTimer.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resume, aiEffects, sectionOrder, currentStyle, lang, generatePreview])
+
+  // ---- Completion progress ----
+  const progress = (() => {
+    let done = 0
+    const total = 6
+    if (resume.name) done++
+    if (resume.title) done++
+    if (resume.bio) done++
+    if (resume.work_experiences.some(w => w.company || w.position)) done++
+    if (resume.educations.some(e => e.school)) done++
+    if (resume.skills.length) done++
+    return (done / total) * 100
+  })()
 
   // Restore draft from localStorage on mount
   useEffect(() => {
@@ -234,6 +268,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
   // isPersonal already defined in theme config above
 
   return (
+    <FormShell previewHtml={previewHtml} previewLoading={previewLoading} progress={progress} theme={theme} generatePreview={generatePreview}>
     <form onSubmit={handleSubmit} className="space-y-12">
       {/* Draft restored notice */}
       {hasDraft && (
@@ -281,7 +316,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       </div>
 
       {/* Basic Info */}
-      <section>
+      <section id="sec-basic" className="scroll-mt-24">
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
           <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.basicInfo}
@@ -369,13 +404,13 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
         )}
       </section>
 
-      {extraFields}
+      <div id="sec-style" className="scroll-mt-24">{extraFields}</div>
 
       {/* Section Order */}
       <SectionOrder value={sectionOrder} onChange={setSectionOrder} />
 
       {/* Work Experience */}
-      <section>
+      <section id="sec-work" className="scroll-mt-24">
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
           <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.workExperience}
@@ -435,7 +470,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       </section>
 
       {/* Education */}
-      <section>
+      <section id="sec-edu" className="scroll-mt-24">
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
           <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.education}
@@ -512,7 +547,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       </section>
 
       {/* Skills */}
-      <section>
+      <section id="sec-skills" className="scroll-mt-24">
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
           <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.skills}
@@ -551,7 +586,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
       </section>
 
       {/* Hobbies */}
-      <section>
+      <section id="sec-hobbies" className="scroll-mt-24">
         <h2 className="text-lg font-extrabold text-gray-800 mb-5 flex items-center gap-2">
           <span className={`w-1 h-6 rounded-full bg-gradient-to-b ${th.sectionBar} inline-block`} />
           {t.hobbies}
@@ -626,6 +661,7 @@ function ResumeForm({ mode, onSubmit, extraFields, currentStyle, onStyleUpdateFr
         </button>
       </div>
     </form>
+    </FormShell>
   )
 }
 

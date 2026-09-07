@@ -1,527 +1,423 @@
+"""Professional / elite resume-site generator.
+
+Rebuilt on the shared design system. Three presets (executive / swiss / poster)
+define palette + typography + decoration; the ``content_layout`` control
+(classic / poster / sidebar) defines page structure. Both are independent so the
+user can mix, e.g. swiss palette with a sidebar structure.
+"""
 from typing import Optional
+
 from app.models import ResumeData, ProfessionalStyle
 from app.generators.i18n import TOGGLE_SCRIPT, TOGGLE_BUTTON, t
 from app.generators.utils import escape_html as _escape, sanitize_url as _sanitize_url
+from app.generators.design_system import (
+    font_stack, render_base_css, render_reveal_js, render_head_meta,
+)
 
+DEFAULT_PRESET = "executive"
+_LEGACY_MAP = {
+    "elegant": "executive", "minimal": "swiss", "corporate": "executive",
+    "executive": "executive", "swiss": "swiss", "poster": "poster",
+}
 
-def _is_light_bg(hex_color: str) -> bool:
-    """Check if a hex color is light (luminance > 0.5)."""
-    hex_color = hex_color.lstrip('#')
-    if len(hex_color) != 6:
-        return False
-    r, g, b = int(hex_color[:2], 16) / 255, int(hex_color[2:4], 16) / 255, int(hex_color[4:6], 16) / 255
-    luminance = 0.299 * r + 0.587 * g + 0.114 * b
-    return luminance > 0.5
-
-
-PRO_STYLE_PRESETS = {
-    "elegant": {
-        "accent": "#c9a96e",
-        "header_bg": "#1a1a2e",
-        "body_bg": "#fafafa",
-        "footer_bg": "#1a1a2e",
-        "font": "'Helvetica Neue', 'PingFang SC', -apple-system, sans-serif",
-        "bar_style": "linear-gradient(90deg, {accent}, #e8d5a3, {accent})",
-        "border_style": "#c9a96e",
-        "section_color": "#c9a96e",
-        "card_bg": "transparent",
-        "card_border": "none",
+PRO_PRESETS = {
+    "executive": {
+        "fonts": ("Source Serif 4", "Inter"),
+        "fd": font_stack("Source Serif 4"),
+        "fb": font_stack("Inter"),
+        "bg": "#FFFFFF",
+        "surface": "#FBFAF8",
+        "text": "#14213D",
+        "muted": "#5A6478",
+        "line": "#E4E7EF",
+        "accent": "#B08D57",
+        "accent2": "#14213D",
+        "side_bg": "#14213D",
+        "side_fg": "#F4F1EA",
+        "extra_css": """
+.hero { text-align: center; }
+.hero-split { grid-template-columns: 1fr; justify-items: center; gap: var(--space-4); }
+.display { font-weight: 600; }
+.contact-row { justify-content: center; }
+.section-title { font-family: var(--font-display); }
+.side { background: #14213D; color: #F4F1EA; }
+.side .micro-label, .side .section-title { color: #E7CDA3; }
+.side .side-title { color: #C9A96E; }
+.side .contact-row a, .side .contact-row span { color: rgba(244,241,234,.82); }
+.side .skill-name { color: #F4F1EA; }
+.side .bar { background: rgba(255,255,255,.18); }
+.side .bar-fill { background: #C9A96E; }
+.side .tag { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.2); color: #F4F1EA; }
+""",
     },
-    "minimal": {
-        "accent": "#333333",
-        "header_bg": "#ffffff",
-        "body_bg": "#ffffff",
-        "footer_bg": "#f5f5f5",
-        "font": "'Inter', 'PingFang SC', sans-serif",
-        "bar_style": "#333",
-        "border_style": "#e0e0e0",
-        "section_color": "#999",
-        "card_bg": "transparent",
-        "card_border": "none",
+    "swiss": {
+        "fonts": ("Inter",),
+        "fd": font_stack("Inter"),
+        "fb": font_stack("Inter"),
+        "bg": "#FFFFFF",
+        "surface": "#FFFFFF",
+        "text": "#111111",
+        "muted": "#555555",
+        "line": "#111111",
+        "accent": "#D40000",
+        "accent2": "#111111",
+        "side_bg": "#111111",
+        "side_fg": "#FFFFFF",
+        "extra_css": """
+.hero { border-bottom: 2px solid var(--text); }
+.hero-split { grid-template-columns: 1fr auto; align-items: end; }
+.display { font-weight: 800; letter-spacing: -0.045em; text-transform: lowercase; }
+.micro-label { color: var(--text); font-weight: 700; }
+.section { border-top: 1px solid var(--text); }
+.section-title { text-transform: uppercase; font-weight: 700; letter-spacing: -0.01em; }
+.card { border: 1px solid var(--text); border-radius: 0; }
+.card:hover { transform: none; box-shadow: 4px 4px 0 var(--accent); }
+.tag { border-radius: 0; border: 1px solid var(--text); }
+.bar { border-radius: 0; height: 8px; background: #ECECEC; }
+.bar-fill { border-radius: 0; background: var(--accent); }
+.avatar, .avatar-fallback { border-radius: 0; border: 2px solid var(--text); }
+.side { background: #111111; color: #FFFFFF; }
+.side .micro-label, .side .section-title { color: #FFFFFF; }
+.side .side-title { color: #FF4B4B; }
+.side .contact-row a, .side .contact-row span { color: rgba(255,255,255,.8); }
+.side .skill-name { color: #FFFFFF; }
+.side .bar { background: rgba(255,255,255,.2); }
+.side .section { border-top: 1px solid rgba(255,255,255,.25); }
+""",
     },
-    "corporate": {
-        "accent": "#1e40af",
-        "header_bg": "#0f172a",
-        "body_bg": "#f8fafc",
-        "footer_bg": "#0f172a",
-        "font": "'Segoe UI', 'PingFang SC', Roboto, sans-serif",
-        "bar_style": "linear-gradient(90deg, #1e40af, #3b82f6, #1e40af)",
-        "border_style": "#1e40af",
-        "section_color": "#1e40af",
-        "card_bg": "#ffffff",
-        "card_border": "1px solid #e2e8f0",
+    "poster": {
+        "fonts": ("Playfair Display", "Inter"),
+        "fd": font_stack("Playfair Display"),
+        "fb": font_stack("Inter"),
+        "bg": "#0E0E10",
+        "surface": "#17171A",
+        "text": "#F5F2EC",
+        "muted": "#A9A49B",
+        "line": "rgba(255,255,255,.13)",
+        "accent": "#C8A15A",
+        "accent2": "#F5F2EC",
+        "side_bg": "#17171A",
+        "side_fg": "#F5F2EC",
+        "extra_css": """
+.display { font-weight: 700; }
+.section-title { font-family: var(--font-display); font-weight: 600; }
+.card { background: var(--surface); border: 1px solid var(--line); }
+.poster-banner { position: relative; min-height: 340px; display: flex; align-items: flex-end; overflow: hidden; }
+.poster-banner .scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(14,14,16,.94) 6%, rgba(14,14,16,.45) 55%, rgba(14,14,16,.15) 100%); }
+.poster-banner .banner-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.poster-inner { position: relative; z-index: 1; }
+.side { background: #17171A; color: #F5F2EC; }
+.side .micro-label, .side .section-title { color: #C8A15A; }
+.side .side-title { color: #C8A15A; }
+.side .contact-row a, .side .contact-row span { color: rgba(245,242,236,.8); }
+.side .skill-name { color: #F5F2EC; }
+.side .bar { background: rgba(255,255,255,.16); }
+.side .section { border-top: 1px solid rgba(255,255,255,.14); }
+""",
     },
 }
 
 
-def _get_pro_style(style: Optional[ProfessionalStyle] = None) -> dict:
+def _icon(name: str) -> str:
+    paths = {
+        "mail": '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+        "phone": '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/>',
+    }
+    inner = paths.get(name, "")
+    return ('<svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" '
+            'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" '
+            f'stroke-linejoin="round" aria-hidden="true">{inner}</svg>')
+
+
+def _avatar_html(resume: ResumeData, name: str, cls: str = "avatar") -> str:
+    safe_url = _sanitize_url(resume.avatar_url)
+    if safe_url:
+        return f'<img class="{cls}" src="{safe_url}" alt="{_escape(name)}">'
+    initial = _escape(name[0]) if name else "?"
+    return f'<div class="avatar-fallback" aria-hidden="true">{initial}</div>'
+
+
+def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalStyle] = None,
+                               lang: str = "zh", bilingual: bool = False,
+                               ai_effects: list = None) -> str:
     if style is None:
         style = ProfessionalStyle()
-    preset = PRO_STYLE_PRESETS.get(style.ui_style, PRO_STYLE_PRESETS["elegant"])
-    accent = style.accent_color or preset.get("accent", "#c9a96e")
-    header_bg = style.header_bg or preset.get("header_bg", "#1a1a2e")
-    result = dict(preset)
-    result["accent"] = accent
-    result["header_bg"] = header_bg
-    # Expand accent in bar_style
-    result["bar_style"] = preset["bar_style"].replace("{accent}", accent)
-    result["border_style"] = accent if style.accent_color else preset.get("border_style", accent)
-    result["section_color"] = accent if style.accent_color else preset.get("section_color", accent)
-    return result
 
+    preset_id = _LEGACY_MAP.get(getattr(style, "ui_style", "") or "", DEFAULT_PRESET)
+    preset = PRO_PRESETS[preset_id]
 
-def generate_professional_site(resume: ResumeData, style: Optional[ProfessionalStyle] = None, lang: str = "zh", bilingual: bool = False, ai_effects: list = None) -> str:
-    cfg = _get_pro_style(style)
-    accent = cfg["accent"]
-    header_bg = cfg["header_bg"]
-    body_bg = cfg["body_bg"]
-    footer_bg = cfg["footer_bg"]
-    font_family = cfg["font"]
-    bar_style = cfg["bar_style"]
-    section_color = cfg["section_color"]
-    border_style = cfg["border_style"]
-    card_bg = cfg["card_bg"]
-    card_border = cfg["card_border"]
-    photo_layout = getattr(style, 'photo_layout', '') if style else ''
-    content_layout = getattr(style, 'content_layout', 'classic') if style else 'classic'
-    # Backward compat: if photo_layout is set and content_layout is default, use photo_layout
-    if photo_layout and content_layout == 'classic':
-        content_layout = 'poster' if photo_layout == 'poster' else 'classic'
-    header_image = getattr(style, 'header_image', '') if style else ''
-    timeline_style = getattr(style, 'timeline_style', 'alternate') if style else 'alternate'
-    section_order = getattr(style, 'section_order', []) if style else []
+    tokens = {k: preset[k] for k in ("fd", "fb", "fonts", "bg", "surface", "text",
+                                     "muted", "line", "accent", "accent2")}
 
-    name_en = _escape(resume.name)
-    name_cn = _escape(resume.name_cn or resume.name)
-    title_en = _escape(resume.title)
-    title_cn = _escape(resume.title_cn or resume.title)
-    bio_en = _escape(resume.bio)
-    bio_cn = _escape(resume.bio_cn or resume.bio)
+    # User colour overrides
+    accent_color = getattr(style, "accent_color", "") or ""
+    if accent_color:
+        tokens["accent"] = accent_color
+    header_bg = getattr(style, "header_bg", "") or ""
 
-    # SEO: build meta description and JSON-LD
-    seo_desc = bio_en or f"{name_en} - {title_en}"
-    seo_jsonld = f'{{"@context":"https://schema.org","@type":"Person","name":"{name_en}","jobTitle":"{title_en}","description":"{seo_desc[:160]}"}}'
-    avatar_url_safe = _sanitize_url(resume.avatar_url) if resume.avatar_url else ''
-    og_image_tag = f'<meta property="og:image" content="{avatar_url_safe}">' if avatar_url_safe else ''
+    # Layout resolution (with legacy photo_layout alias)
+    content_layout = getattr(style, "content_layout", "classic") or "classic"
+    photo_layout = getattr(style, "photo_layout", "") or ""
+    if photo_layout and content_layout == "classic":
+        content_layout = "poster" if photo_layout == "poster" else "classic"
+    if content_layout not in ("classic", "poster", "sidebar"):
+        content_layout = "classic"
 
-    contact_items = []
-    if resume.email:
-        contact_items.append(_escape(resume.email))
-    if resume.phone:
-        contact_items.append(_escape(resume.phone))
-    contact_html = " &nbsp;&nbsp;|&nbsp;&nbsp; ".join(contact_items)
+    timeline_style = getattr(style, "timeline_style", "linear") or "linear"
+    section_order = getattr(style, "section_order", []) or []
+    header_image = _sanitize_url(getattr(style, "header_image", ""))
+    dark_mode = getattr(style, "dark_mode", False)
 
-    def _avatar(name, size=100):
-        safe_url = _sanitize_url(resume.avatar_url)
-        if safe_url:
-            return f'<img src="{safe_url}" alt="avatar" style="width:{size}px;height:{size}px;border-radius:50%;object-fit:cover;border:3px solid {accent};" />'
-        initial = _escape(name[0]) if name else ''
-        return f'<div style="width:{size}px;height:{size}px;border-radius:50%;background:{header_bg};display:flex;align-items:center;justify-content:center;color:{accent};font-size:{int(size*0.4)}px;font-weight:300;border:3px solid {accent};">{initial}</div>'
+    name_en, name_cn = _escape(resume.name), _escape(resume.name_cn or resume.name)
+    title_en, title_cn = _escape(resume.title), _escape(resume.title_cn or resume.title)
+    bio_en, bio_cn = _escape(resume.bio), _escape(resume.bio_cn or resume.bio)
 
-    def _build_work(lang_code, compact=False):
+    def _contact(vertical=False):
+        items = []
+        if resume.email:
+            items.append(f'<a href="mailto:{_escape(resume.email)}">{_icon("mail")}<span>{_escape(resume.email)}</span></a>')
+        if resume.phone:
+            items.append(f'<span>{_icon("phone")}{_escape(resume.phone)}</span>')
+        return f'<div class="contact-row">{"".join(items)}</div>' if items else ""
+
+    # ---- section builders ----
+    def _bio(lc, num=None):
+        bio = bio_en if lc == "en" else bio_cn
+        if not bio:
+            return ""
+        label = t("profile_summary")[0] if lc == "en" else t("profile_summary")[1]
+        n = f'<span class="num">{num}</span>' if num else ""
+        return f'''
+        <section class="section reveal">
+          <div class="section-head">{n}<h2 class="section-title">{label}</h2></div>
+          <p class="lead">{bio}</p>
+        </section>'''
+
+    def _work(lc, num=None):
         if not resume.work_experiences:
             return ""
-        label = t("professional_experience")[0] if lang_code == "en" else t("professional_experience")[1]
+        label = t("professional_experience")[0] if lc == "en" else t("professional_experience")[1]
+        total = len(resume.work_experiences)
         items = ""
-        for idx, exp in enumerate(resume.work_experiences):
-            pos = _escape(exp.position if lang_code == "en" else (exp.position_cn or exp.position))
-            comp = _escape(exp.company if lang_code == "en" else (exp.company_cn or exp.company))
-            dur = _escape(exp.duration if lang_code == "en" else (exp.duration_cn or exp.duration))
-            desc = _escape(exp.description if lang_code == "en" else (exp.description_cn or exp.description))
-            # Alternating timeline: even items left, odd items right
-            is_right = idx % 2 == 0
-            if compact or len(resume.work_experiences) < 2 or timeline_style != 'alternate':
-                # Single column timeline (for sidebar or few items)
-                items += f'''
-            <div style="position:relative;padding-left:32px;margin-bottom:28px;border-left:2px solid {accent};">
-                <div style="position:absolute;left:-7px;top:4px;width:12px;height:12px;background:{accent};border-radius:50%;"></div>
-                <h3 style="margin:0 0 2px 0;font-size:{15 if compact else 18}px;color:#1a1a2e;font-weight:600;">{pos}</h3>
-                <p style="margin:0 0 2px 0;color:{accent};font-weight:500;letter-spacing:0.5px;">{comp}</p>
-                <p style="margin:0 0 6px 0;color:#999;font-size:12px;letter-spacing:1px;">{dur}</p>
-                <p style="margin:0;color:#555;line-height:1.6;font-size:{13 if compact else 15}px;">{desc}</p>
-            </div>'''
-            else:
-                # Alternating timeline
-                if is_right:
-                    items += f'''
-            <div class="rs-timeline" style="display:flex;margin-bottom:32px;">
-                <div class="rs-timeline-card" style="flex:1;padding-right:28px;text-align:right;">
-                    <h3 style="margin:0 0 2px 0;font-size:18px;color:#1a1a2e;font-weight:600;">{pos}</h3>
-                    <p style="margin:0 0 2px 0;color:{accent};font-weight:500;letter-spacing:0.5px;">{comp}</p>
-                    <p style="margin:0 0 8px 0;color:#999;font-size:13px;letter-spacing:1px;">{dur}</p>
-                    <p style="margin:0;color:#555;line-height:1.7;font-size:15px;">{desc}</p>
-                </div>
-                <div style="position:relative;width:16px;flex-shrink:0;">
-                    <div style="position:absolute;left:50%;top:4px;transform:translateX(-50%);width:14px;height:14px;background:{accent};border-radius:50%;border:3px solid {body_bg};z-index:1;"></div>
-                    <div style="position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);width:2px;background:{accent}40;"></div>
-                </div>
-                <div style="flex:1;"></div>
-            </div>'''
-                else:
-                    items += f'''
-            <div class="rs-timeline" style="display:flex;margin-bottom:32px;">
-                <div style="flex:1;"></div>
-                <div style="position:relative;width:16px;flex-shrink:0;">
-                    <div style="position:absolute;left:50%;top:4px;transform:translateX(-50%);width:14px;height:14px;background:{accent};border-radius:50%;border:3px solid {body_bg};z-index:1;"></div>
-                    <div style="position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);width:2px;background:{accent}40;"></div>
-                </div>
-                <div style="flex:1;padding-left:28px;">
-                    <h3 style="margin:0 0 2px 0;font-size:18px;color:#1a1a2e;font-weight:600;">{pos}</h3>
-                    <p style="margin:0 0 2px 0;color:{accent};font-weight:500;letter-spacing:0.5px;">{comp}</p>
-                    <p style="margin:0 0 8px 0;color:#999;font-size:13px;letter-spacing:1px;">{dur}</p>
-                    <p style="margin:0;color:#555;line-height:1.7;font-size:15px;">{desc}</p>
-                </div>
-            </div>'''
-        return f'<section style="margin-bottom:{40 if compact else 56}px;"><h2 style="font-size:{12 if compact else 14}px;letter-spacing:{2 if compact else 3}px;color:{section_color};margin-bottom:{20 if compact else 32}px;font-weight:600;">{label}</h2>{items}</section>'
+        for exp in resume.work_experiences:
+            pos = _escape(exp.position if lc == "en" else (exp.position_cn or exp.position))
+            comp = _escape(exp.company if lc == "en" else (exp.company_cn or exp.company))
+            dur = _escape(exp.duration if lc == "en" else (exp.duration_cn or exp.duration))
+            desc = _escape(exp.description if lc == "en" else (exp.description_cn or exp.description))
+            items += f'''
+          <div class="timeline-item">
+            <h3>{pos}</h3>
+            <div class="meta">{comp} &nbsp;&middot;&nbsp; {dur}</div>
+            <p>{desc}</p>
+          </div>'''
+        alt = "timeline timeline--alt" if (total >= 2 and timeline_style == "alternate") else "timeline"
+        n = f'<span class="num">{num}</span>' if num else ""
+        return f'''
+        <section class="section reveal">
+          <div class="section-head">{n}<h2 class="section-title">{label}</h2></div>
+          <div class="{alt}">{items}
+          </div>
+        </section>'''
 
-    def _build_edu(lang_code, compact=False):
+    def _edu(lc, num=None):
         if not resume.educations:
             return ""
-        label = t("education")[0] if lang_code == "en" else t("education")[1]
-        items = ""
+        label = t("education")[0] if lc == "en" else t("education")[1]
+        rows = ""
         for edu in resume.educations:
-            school = _escape(edu.school if lang_code == "en" else (edu.school_cn or edu.school))
-            major = _escape(edu.major if lang_code == "en" else (edu.major_cn or edu.major))
-            dur = _escape(edu.duration if lang_code == "en" else (edu.duration_cn or edu.duration))
+            school = _escape(edu.school if lc == "en" else (edu.school_cn or edu.school))
+            major = _escape(edu.major if lc == "en" else (edu.major_cn or edu.major))
+            dur = _escape(edu.duration if lc == "en" else (edu.duration_cn or edu.duration))
             safe_logo = _sanitize_url(edu.school_logo)
-            logo_html = f'<img src="{safe_logo}" alt="logo" style="width:36px;height:36px;object-fit:contain;border-radius:6px;margin-right:12px;flex-shrink:0;" />' if safe_logo else ''
-            items += f'''
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:{12 if compact else 16}px 0;border-bottom:1px solid #f0f0f0;">
-                <div style="display:flex;align-items:center;">
-                    {logo_html}
-                    <div>
-                        <h3 style="margin:0;font-size:{14 if compact else 16}px;color:#1a1a2e;font-weight:600;">{school}</h3>
-                        <p style="margin:4px 0 0 0;color:#666;font-size:13px;">{major}</p>
-                    </div>
-                </div>
-                <span style="color:#999;font-size:12px;white-space:nowrap;">{dur}</span>
-            </div>'''
-        return f'<section style="margin-bottom:{40 if compact else 56}px;"><h2 style="font-size:{12 if compact else 14}px;letter-spacing:{2 if compact else 3}px;color:{section_color};margin-bottom:{16 if compact else 24}px;font-weight:600;">{label}</h2>{items}</section>'
+            logo = f'<img class="edu-logo" src="{safe_logo}" alt="">' if safe_logo else ""
+            rows += f'''
+          <div class="edu-head" style="padding:var(--space-4) 0;border-bottom:1px solid var(--line);">
+            {logo}
+            <div style="flex:1;"><h3 class="section-title" style="font-size:1.02rem;">{school}</h3>
+            <div style="color:var(--muted);font-size:.9rem;margin-top:2px;">{major}</div></div>
+            <span class="micro-label" style="align-self:center;">{dur}</span>
+          </div>'''
+        n = f'<span class="num">{num}</span>' if num else ""
+        return f'''
+        <section class="section reveal">
+          <div class="section-head">{n}<h2 class="section-title">{label}</h2></div>
+          <div>{rows}
+          </div>
+        </section>'''
 
-    def _build_skills(lang_code, compact=False, dark=False):
-        skill_list = resume.skills if lang_code == "en" else (resume.skills_cn if resume.skills_cn else resume.skills)
+    def _skills(lc, num=None, compact=False):
+        skill_list = resume.skills if lc == "en" else (resume.skills_cn or resume.skills)
         if not skill_list:
             return ""
-        label = t("core_competencies")[0] if lang_code == "en" else t("core_competencies")[1]
-        # Progress bar visualization
+        label = t("core_competencies")[0] if lc == "en" else t("core_competencies")[1]
         bars = ""
-        total = len(skill_list)
-        text_color = '#ccc' if dark else '#444'
-        bar_bg = 'rgba(255,255,255,0.15)' if dark else '#e8e8e8'
-        heading_color = accent if dark else section_color
         for i, s in enumerate(skill_list):
-            s = _escape(s)
-            # Width: first skills wider, last ones slightly shorter for visual interest
-            width = min(100, 60 + (total - i) * 6) if total > 1 else 80
+            pct = min(98, 66 + (len(skill_list) - i) * 5) if len(skill_list) > 1 else 82
             bars += f'''
-            <div style="margin-bottom:{8 if compact else 14}px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-                    <span style="font-size:{11 if compact else 13}px;color:{text_color};font-weight:500;">{s}</span>
-                </div>
-                <div style="height:{6 if compact else 8}px;background:{bar_bg};border-radius:4px;overflow:hidden;">
-                    <div style="height:100%;width:{width}%;background:{accent};border-radius:4px;"></div>
-                </div>
-            </div>'''
-        return f'<section style="margin-bottom:{40 if compact else 56}px;"><h2 style="font-size:{12 if compact else 14}px;letter-spacing:{2 if compact else 3}px;color:{heading_color};margin-bottom:{16 if compact else 24}px;font-weight:600;">{label}</h2>{bars}</section>'
+          <div class="skill">
+            <div class="skill-top"><span class="skill-name">{_escape(s)}</span>{"" if compact else f'<span class="skill-pct">{pct}%</span>'}</div>
+            <div class="bar"><div class="bar-fill" style="width:{pct}%;"></div></div>
+          </div>'''
+        n = f'<span class="num">{num}</span>' if num else ""
+        return f'''
+        <section class="section reveal">
+          <div class="section-head">{n}<h2 class="section-title">{label}</h2></div>
+          <div>{bars}
+          </div>
+        </section>'''
 
-    def _build_hobbies(lang_code, dark=False):
-        hobby_list = resume.hobbies if lang_code == "en" else (resume.hobbies_cn if resume.hobbies_cn else resume.hobbies)
+    def _hobbies(lc, num=None):
+        hobby_list = resume.hobbies if lc == "en" else (resume.hobbies_cn or resume.hobbies)
         if not hobby_list:
             return ""
-        label = t("interests")[0] if lang_code == "en" else t("interests")[1]
-        h_color = '#aaa' if dark else '#666'
-        heading_color = accent if dark else section_color
-        items = " &nbsp;&middot;&nbsp; ".join(f'<span style="color:{h_color};">{_escape(h)}</span>' for h in hobby_list)
-        return f'<section style="margin-bottom:{40 if dark else 56}px;"><h2 style="font-size:{12 if dark else 14}px;letter-spacing:{2 if dark else 3}px;color:{heading_color};margin-bottom:16px;font-weight:600;">{label}</h2><p style="font-size:14px;line-height:1.8;">{items}</p></section>'
+        label = t("interests")[0] if lc == "en" else t("interests")[1]
+        tags = "".join(f'<span class="tag">{_escape(h)}</span>' for h in hobby_list)
+        n = f'<span class="num">{num}</span>' if num else ""
+        return f'''
+        <section class="section reveal">
+          <div class="section-head">{n}<h2 class="section-title">{label}</h2></div>
+          <div class="tag-row">{tags}</div>
+        </section>'''
 
-    def _build_full_page(lang_code):
-        name = name_en if lang_code == "en" else name_cn
-        title = title_en if lang_code == "en" else title_cn
-        bio = bio_en if lang_code == "en" else bio_cn
-        avatar = _avatar(name)
-        profile_label = t("profile_summary")[0] if lang_code == "en" else t("profile_summary")[1]
-        footer_label = t("footer_built_with")[0] if lang_code == "en" else t("footer_built_with")[1]
-        title_style = 'text-transform:uppercase;' if lang_code == "en" else ''
+    def _ordered(lc, exclude=None, start=1):
+        exclude = exclude or []
+        default_order = ["bio", "work", "education", "skills", "hobbies"]
+        order = section_order or default_order
+        builders = {"bio": _bio, "work": _work, "education": _edu,
+                    "skills": _skills, "hobbies": _hobbies}
+        out, num = "", start
+        for key in order:
+            if key in exclude or key not in builders:
+                continue
+            out += builders[key](lc, f"{num:02d}")
+            num += 1
+        return out
 
-        # Determine text colors based on header background luminance
-        is_light = _is_light_bg(header_bg)
-        name_color = '#333333' if is_light else '#ffffff'
-        title_shadow = 'text-shadow:0 1px 4px rgba(0,0,0,0.1);' if is_light else 'text-shadow:0 2px 20px rgba(0,0,0,0.3);'
-        contact_color = '#666' if is_light else '#aaa'
-        subtitle_shadow = 'text-shadow:0 1px 4px rgba(0,0,0,0.08);' if is_light else 'text-shadow:0 1px 10px rgba(0,0,0,0.2);'
+    def _footer(lc, name):
+        footer_label = t("footer_built_with")[0] if lc == "en" else t("footer_built_with")[1]
+        return f'''
+      <footer class="footer"><div class="wrap">{name} &nbsp;&middot;&nbsp; {footer_label} &nbsp;&copy;&nbsp; 2026</div></footer>'''
 
-        bio_html = f'<section style="margin-bottom:56px;"><h2 style="font-size:14px;letter-spacing:3px;color:{section_color};margin-bottom:16px;font-weight:600;">{profile_label}</h2><p style="font-size:15px;color:#555;line-height:1.9;padding:20px 0;border-bottom:1px solid #f0f0f0;">{bio}</p></section>' if bio else ''
+    def _build_page(lc):
+        name = name_en if lc == "en" else name_cn
+        title = title_en if lc == "en" else title_cn
+        avatar = _avatar_html(resume, name)
+        contact = _contact()
 
-        # Section order helper
-        default_order = ["bio", "education", "work", "skills", "hobbies"]
-        order = section_order if section_order else default_order
-        section_map = {
-            "bio": bio_html,
-            "education": _build_edu,
-            "work": _build_work,
-            "skills": _build_skills,
-            "hobbies": _build_hobbies,
-        }
-        def _ordered_sections(lang_code, exclude=None):
-            exclude = exclude or []
-            html = ""
-            for key in order:
-                if key in exclude:
-                    continue
-                val = section_map.get(key, "")
-                if callable(val):
-                    html += val(lang_code)
-                elif isinstance(val, str):
-                    html += val
-            return html
-
-        # === SIDEBAR LAYOUT ===
-        if content_layout == 'sidebar':
-            sidebar_avatar = _avatar(name, size=100)
-            # Contact list for sidebar (vertical)
-            sidebar_contact = ""
-            if resume.email:
-                sidebar_contact += f'<div style="font-size:12px;color:#888;margin-bottom:6px;">&#x2709; {_escape(resume.email)}</div>'
-            if resume.phone:
-                sidebar_contact += f'<div style="font-size:12px;color:#888;margin-bottom:6px;">&#x1F4DE; {_escape(resume.phone)}</div>'
-
-            sidebar_html = f'''
-            <aside class="rs-sidebar" style="width:280px;flex-shrink:0;background:{header_bg};color:white;padding:40px 24px;min-height:100vh;">
-                <div style="text-align:center;margin-bottom:24px;">
-                    {sidebar_avatar}
-                    <h1 style="font-size:20px;margin:16px 0 4px 0;font-weight:600;letter-spacing:1px;">{name}</h1>
-                    <p style="font-size:13px;color:{accent};letter-spacing:2px;margin:0;{title_style}">{title}</p>
-                </div>
-                <div style="border-top:1px solid rgba(255,255,255,0.15);padding-top:20px;margin-bottom:24px;">
-                    {sidebar_contact}
-                </div>
-                {_build_skills(lang_code, compact=True, dark=True)}
-                {_build_hobbies(lang_code, dark=True)}
-            </aside>'''
-
-            main_html = f'''
-            <div style="flex:1;padding:48px 40px;max-width:calc(100% - 280px);">
-                {_ordered_sections(lang_code, exclude=["skills", "hobbies"])}
-            </div>'''
-
+        # ===== SIDEBAR =====
+        if content_layout == "sidebar":
+            aside = f'''
+        <aside class="side">
+          <div class="side-id">
+            {avatar}
+            <h1>{name}</h1>
+            <div class="side-title">{title}</div>
+          </div>
+          {contact}
+          {_skills(lc, compact=True)}
+          {_hobbies(lc)}
+        </aside>'''
+            main = f'''
+        <div class="side-main">
+          {_ordered(lc, exclude=["skills", "hobbies"])}
+        </div>'''
             return f'''
-        <div class="rs-sidebar-wrap" style="display:flex;min-height:100vh;">
-            {sidebar_html}
-            {main_html}
-        </div>
-        <footer style="text-align:center;padding:24px 20px;background:{footer_bg};color:#666;font-size:12px;letter-spacing:1px;">
-            <p style="color:{accent};margin-bottom:4px;">{name}</p>
-            <p>{footer_label}</p>
-        </footer>'''
+      <div class="shell">{aside}{main}
+      </div>{_footer(lc, name)}'''
 
-        # === POSTER LAYOUT ===
-        elif content_layout == 'poster':
-            # Banner background: header_image if available, else gradient
-            if header_image:
-                safe_hi = _sanitize_url(header_image)
-                banner_bg = f"background:url('{safe_hi}') center/cover no-repeat, linear-gradient(135deg, {header_bg}, {accent}40);" if safe_hi else f"background:linear-gradient(135deg, {header_bg}, {accent}40);"
-            elif resume.avatar_url:
-                safe_av = _sanitize_url(resume.avatar_url)
-                banner_bg = f"background:url('{safe_av}') center/cover no-repeat;" if safe_av else f"background:linear-gradient(135deg, {header_bg} 0%, {header_bg}dd 60%, {accent}30 100%);"
+        # ===== POSTER =====
+        if content_layout == "poster":
+            banner_img = header_image or (_sanitize_url(resume.avatar_url) or "")
+            if banner_img:
+                bg_layer = f'<img class="banner-img" src="{banner_img}" alt="">'
             else:
-                banner_bg = f"background:linear-gradient(135deg, {header_bg} 0%, {header_bg}dd 60%, {accent}30 100%);"
-
-            # Avatar circle (larger, overlaps banner bottom)
-            if resume.avatar_url:
-                poster_safe_url = _sanitize_url(resume.avatar_url)
-                if poster_safe_url:
-                    poster_avatar = (
-                        f'<div style="position:absolute;bottom:-55px;left:40px;z-index:2;">'
-                        f'<img src="{poster_safe_url}" alt="avatar" '
-                        f'style="width:120px;height:120px;border-radius:50%;object-fit:cover;'
-                        f'border:4px solid {body_bg};box-shadow:0 4px 16px rgba(0,0,0,0.2);" />'
-                        f'</div>'
-                    )
-                else:
-                    initial = _escape(name[0]) if name else ''
-                    poster_avatar = (
-                        f'<div style="position:absolute;bottom:-55px;left:40px;z-index:2;">'
-                        f'<div style="width:120px;height:120px;border-radius:50%;'
-                        f'background:{header_bg};display:flex;align-items:center;justify-content:center;'
-                        f'color:{accent};font-size:48px;font-weight:300;'
-                        f'border:4px solid {body_bg};box-shadow:0 4px 16px rgba(0,0,0,0.2);">{initial}</div>'
-                        f'</div>'
-                    )
-            else:
-                initial = _escape(name[0]) if name else ''
-                poster_avatar = (
-                    f'<div style="position:absolute;bottom:-55px;left:40px;z-index:2;">'
-                    f'<div style="width:120px;height:120px;border-radius:50%;'
-                    f'background:{header_bg};display:flex;align-items:center;justify-content:center;'
-                    f'color:{accent};font-size:48px;font-weight:300;'
-                    f'border:4px solid {body_bg};box-shadow:0 4px 16px rgba(0,0,0,0.2);">{initial}</div>'
-                    f'</div>'
-                )
-
+                bg_layer = f'<div class="banner-img" style="background:linear-gradient(135deg,{preset["side_bg"]},{tokens["accent"]}55);"></div>'
             header_html = f'''
-        <header style="position:relative;">
-            <div style="height:280px;{banner_bg}position:relative;overflow:hidden;">
-                <div style="position:absolute;inset:0;background:linear-gradient(to right, {header_bg}90 0%, transparent 50%, {header_bg}60 100%);"></div>
-                <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top, {header_bg}cc, transparent);"></div>
-            </div>
-            {poster_avatar}
-            <div style="background:{body_bg};padding:72px 40px 32px 40px;max-width:720px;">
-                <h1 style="font-size:32px;margin:0 0 4px 0;color:#1a1a2e;font-weight:700;letter-spacing:1px;">{name}</h1>
-                <p style="font-size:16px;color:{accent};letter-spacing:2px;font-weight:500;margin:0 0 12px 0;{title_style}">{title}</p>
-                {f'<p style="color:#888;font-size:13px;letter-spacing:1px;margin:0;">{contact_html}</p>' if contact_html else ''}
-            </div>
+        <header class="poster-banner">
+          {bg_layer}
+          <div class="scrim"></div>
+          <div class="wrap poster-inner" style="padding-top:var(--space-9);padding-bottom:var(--space-7);">
+            <p class="micro-label" style="color:var(--accent);">{title}</p>
+            <h1 class="display">{name}</h1>
+            {contact}
+          </div>
         </header>'''
-
             return f'''
-        {header_html}
-        <div style="height:4px;background:{bar_style};"></div>
-        <main style="max-width:720px;margin:0 auto;padding:56px 20px;">
-            {_ordered_sections(lang_code)}
-        </main>
-        <footer style="text-align:center;padding:40px 20px;background:{footer_bg};color:#666;font-size:12px;letter-spacing:1px;">
-            <p style="color:{accent};margin-bottom:4px;">{name}</p>
-            <p>{footer_label}</p>
-        </footer>'''
+      {header_html}
+      <main class="wrap">{_ordered(lc)}
+      </main>{_footer(lc, name)}'''
 
-        # === CLASSIC LAYOUT (default) ===
-        else:
-            header_html = f'''
-        <header style="background:{header_bg};padding:60px 20px;text-align:center;">
-            <div style="max-width:720px;margin:0 auto;">
-                {avatar}
-                <h1 style="font-size:36px;margin:24px 0 4px 0;color:{name_color};font-weight:300;letter-spacing:2px;">{name}</h1>
-                <p style="font-size:16px;color:{accent};letter-spacing:3px;font-weight:500;{title_style}">{title}</p>
-                {f'<p style="margin-top:16px;color:{contact_color};font-size:13px;letter-spacing:1px;">{contact_html}</p>' if contact_html else ''}
+        # ===== CLASSIC (default) =====
+        header_html = f'''
+        <header class="hero">
+          <div class="wrap hero-split">
+            <div class="hero-main reveal in">
+              <p class="micro-label">{title}</p>
+              <h1 class="display">{name}</h1>
+              {contact}
             </div>
+            <div class="hero-side reveal in">{avatar}</div>
+          </div>
         </header>'''
+        return f'''
+      <div class="accent-bar" style="background:linear-gradient(90deg,{tokens["accent"]},{tokens["accent2"]});"></div>
+      {header_html}
+      <main class="wrap">{_ordered(lc)}
+      </main>{_footer(lc, name)}'''
 
-            return f'''
-        {header_html}
-        <div style="height:4px;background:{bar_style};"></div>
-        <main style="max-width:720px;margin:0 auto;padding:56px 20px;">
-            {_ordered_sections(lang_code)}
-        </main>
-        <footer style="text-align:center;padding:40px 20px;background:{footer_bg};color:#666;font-size:12px;letter-spacing:1px;">
-            <p style="color:{accent};margin-bottom:4px;">{name}</p>
-            <p>{footer_label}</p>
-        </footer>'''
-
+    # ---- language assembly ----
     if bilingual:
-        body = f'''
-    {TOGGLE_BUTTON}
-    <div class="lang-zh">{_build_full_page("zh")}</div>
-    <div class="lang-en" style="display:none;">{_build_full_page("en")}</div>'''
-        extra_css = ".lang-en { display: none; }"
+        body = f'''{TOGGLE_BUTTON}
+    <div class="lang-zh">{_build_page("zh")}</div>
+    <div class="lang-en" style="display:none;">{_build_page("en")}</div>'''
+        lang_css = ".lang-en { display: none; }"
         script = TOGGLE_SCRIPT
         html_lang = "zh-CN"
         page_title = name_cn
-    elif lang == "zh":
-        body = _build_full_page("zh")
-        extra_css = ""
-        script = ""
-        html_lang = "zh-CN"
-        page_title = name_cn
     else:
-        body = _build_full_page("en")
-        extra_css = ""
+        lc = "zh" if lang == "zh" else "en"
+        body = _build_page(lc)
+        lang_css = ""
         script = ""
-        html_lang = "en"
-        page_title = name_en
+        html_lang = "zh-CN" if lang == "zh" else "en"
+        page_title = name_cn if lang == "zh" else name_en
 
-    # Build AI effects CSS/JS
-    ai_css_parts = []
-    ai_js_parts = []
-    if ai_effects:
-        for effect in ai_effects:
-            if isinstance(effect, dict):
-                ai_css_parts.append(effect.get("css", ""))
-                ai_js_parts.append(effect.get("js", ""))
+    dark_css = ""
+    if dark_mode:
+        dark_css = """
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#0E0E10; --surface:#17171A; --text:#F2EDE7; --muted:#A9A49B; --line:rgba(255,255,255,.13); }
+}
+"""
+
+    ai_css_parts, ai_js_parts = [], []
+    for effect in (ai_effects or []):
+        if isinstance(effect, dict):
+            ai_css_parts.append(effect.get("css", ""))
+            ai_js_parts.append(effect.get("js", ""))
     ai_css = "\n".join(ai_css_parts)
     ai_js = "\n".join(ai_js_parts)
 
-    dark_mode = getattr(style, 'dark_mode', False) if style else False
-    dark_mode_css = ""
-    if dark_mode:
-        dark_mode_css = """
-        @media (prefers-color-scheme: dark) {
-            body { background: #1a1a2e !important; color: #e0e0e0 !important; }
-            header { filter: brightness(0.85); }
-            h1, h2, h3 { color: #f0f0f0 !important; }
-            p, span { color: inherit; }
-            .rs-sidebar { background: #12122a !important; }
-            .rs-sidebar-wrap > div:last-child {
-                background: #1a1a2e !important;
-            }
-            section > div, [style*="border-bottom:1px solid"] {
-                border-color: #3a3a5e !important;
-            }
-            [style*="background:#ffffff"], [style*="background: #ffffff"],
-            [style*="background:#fafafa"], [style*="background: #fafafa"],
-            [style*="background:#f8fafc"] {
-                background: #2a2a3e !important;
-            }
-            footer { background: #12122a !important; color: #888 !important; }
-            a { color: #8b9cf7 !important; }
-        }
-        """
+    tokens["extra_css"] = (preset["extra_css"] + "\n" + lang_css + "\n" + dark_css + "\n" + ai_css)
+    base_css = render_base_css(tokens)
 
-    html = f'''<!DOCTYPE html>
+    seo_desc = (bio_en or f"{name_en} - {title_en}")[:160]
+    avatar_url_safe = _sanitize_url(resume.avatar_url) if resume.avatar_url else ""
+    head_meta = render_head_meta(page_title, seo_desc, avatar_url_safe)
+
+    return f'''<!DOCTYPE html>
 <html lang="{html_lang}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{seo_desc[:160]}">
-    <meta property="og:title" content="{page_title}">
-    <meta property="og:description" content="{seo_desc[:160]}">
-    <meta property="og:type" content="profile">
-    {og_image_tag}
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="{page_title}">
-    <meta name="twitter:description" content="{seo_desc[:160]}">
-    <script type="application/ld+json">{seo_jsonld}</script>
-    <title>{page_title}</title>
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{
-            font-family: {font_family};
-            background: {body_bg};
-            color: #333;
-            line-height: 1.6;
-        }}
-        {extra_css}
-        @media (max-width: 768px) {{
-            .rs-sidebar-wrap {{ flex-direction: column !important; }}
-            .rs-sidebar {{ width: 100% !important; min-height: auto !important; padding: 24px 20px !important; }}
-            .rs-sidebar-wrap > div:last-child {{ max-width: 100% !important; padding: 24px 15px !important; }}
-            .rs-timeline {{ flex-direction: column !important; }}
-            .rs-timeline > div {{ flex: none !important; padding: 0 !important; text-align: left !important; }}
-            .rs-timeline > div[style*="width:16px"] {{ display: none !important; }}
-            .rs-timeline > div[style*="width:20px"] {{ display: none !important; }}
-            .rs-timeline-card {{ padding: 0 !important; margin-bottom: 16px; }}
-            body {{ font-size: 15px; }}
-            h1 {{ font-size: 24px !important; }}
-            h2 {{ font-size: 18px !important; }}
-            header {{ padding: 24px 15px !important; }}
-            main {{ padding: 24px 15px !important; }}
-            section {{ margin-bottom: 28px !important; }}
-        }}
-        @media print {{
-            body {{ background: white !important; }}
-            header {{ page-break-after: avoid; }}
-            section {{ page-break-inside: avoid; }}
-            footer {{ page-break-before: avoid; }}
-            .rs-sidebar-wrap {{ display: block !important; }}
-            .rs-sidebar {{ page-break-after: avoid; }}
-        }}
-        {dark_mode_css}
-        {ai_css}
-    </style>
-    {script}
+{head_meta}<style>
+{base_css}</style>
+{script}
 </head>
-<body>
-    {body}
-    <div id="ai-effect-container" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:900;overflow:hidden;"></div>
-    <script>{ai_js}</script>
+<body class="preset-{preset_id} layout-{content_layout}">
+<div class="site">
+{body}
+</div>
+<div id="ai-effect-container" style="position:fixed;inset:0;pointer-events:none;z-index:900;overflow:hidden;"></div>
+{render_reveal_js()}
+<script>{ai_js}</script>
 </body>
 </html>'''
-    return html

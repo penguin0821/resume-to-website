@@ -21,6 +21,12 @@ export const translations = {
     minimal: "Minimal",
     elegant: "Elegant",
     corporate: "Corporate",
+    editorial: "Editorial",
+    studio: "Studio",
+    aurora: "Aurora",
+    executive: "Executive",
+    swiss: "Swiss",
+    poster: "Poster",
 
     // Form - common
     basicInfo: "Basic Info",
@@ -337,6 +343,12 @@ export const translations = {
     minimal: "\u6781\u7b80\u98ce",
     elegant: "\u4f18\u96c5\u98ce",
     corporate: "\u5546\u52a1\u98ce",
+    editorial: "\u7f16\u8f91\u98ce",
+    studio: "\u5de5\u4f5c\u5ba4",
+    aurora: "\u6781\u5149\u98ce",
+    executive: "\u9ad8\u7ba1\u98ce",
+    swiss: "\u745e\u58eb\u98ce",
+    poster: "\u6d77\u62a5\u98ce",
 
     // Form - common
     basicInfo: "\u57fa\u672c\u4fe1\u606f",

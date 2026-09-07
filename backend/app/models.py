@@ -55,7 +55,7 @@ class PersonalStyle(BaseModel):
     splice_repeat: bool = False  # interval repeat pattern
     accent_pattern: str = "dots"  # dots/clover/hollow/coin/star/star4/diamond/cross/heart/wave
     accent_layout: str = "even"  # even / random
-    ui_style: str = "cartoon"  # cartoon / minimal / artistic / retro
+    ui_style: str = "editorial"  # editorial / studio / aurora (legacy: cartoon/minimal/artistic/retro auto-mapped)
     bg_image: str = ""  # base64 data URL or image URL
     timeline_style: str = "alternate"  # alternate / linear
     section_order: list[str] = []  # e.g. ["bio","education","work","skills","hobbies"]
@@ -66,7 +66,7 @@ class ProfessionalStyle(BaseModel):
     """职业精英模式风格配置"""
     accent_color: str = "#c9a96e"  # gold accent
     header_bg: str = "#1a1a2e"     # dark header bg
-    ui_style: str = "elegant"      # elegant / minimal / corporate
+    ui_style: str = "executive"     # executive / swiss / poster (legacy: elegant/minimal/corporate auto-mapped)
     keywords: list[str] = []
     content_layout: str = "classic"  # classic / poster / sidebar
     photo_layout: str = ""  # legacy alias for content_layout (backward compat)

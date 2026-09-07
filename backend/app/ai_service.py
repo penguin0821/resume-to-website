@@ -250,7 +250,7 @@ For Personal Style:
 - primary_color: hex color string (main theme color)
 - color_effects: list of effect types from ["solid", "gradient", "shadow", "accent", "splice"]
 - effect_colors: dict like {"solid": ["#xxx"], "gradient": ["#a","#b"], "shadow": ["#c"], "accent": ["#d"], "splice": ["#e","#f"]}
-- ui_style: one of "cartoon", "minimal", "artistic", "retro"
+- ui_style: one of "editorial", "studio", "aurora"
 - timeline_style: "alternate" (left-right zigzag) or "linear" (top-down)
 - section_order: list like ["bio", "education", "work", "skills", "hobbies"]
 - bg_image: background image URL or base64
@@ -262,7 +262,7 @@ For Professional Style:
 - content_layout: "classic" (top-down), "poster" (LinkedIn banner), "sidebar" (left panel)
 - timeline_style: "alternate" or "linear"
 - section_order: list like ["bio", "education", "work", "skills", "hobbies"]
-- ui_style: "elegant", "minimal", "corporate"
+- ui_style: "executive", "swiss", "poster"
 
 Your capabilities:
 1. Suggest style parameter changes based on natural language descriptions

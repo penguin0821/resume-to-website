@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import { API_BASE_URL } from '../config'
@@ -13,7 +13,7 @@ function ProfessionalForm() {
   const [proStyle, setProStyle] = useState({
     accent_color: '#c9a96e',
     header_bg: '#1a1a2e',
-    ui_style: 'elegant',
+    ui_style: 'executive',
     keywords: [],
     content_layout: 'classic',
     photo_layout: '',
@@ -106,17 +106,26 @@ function ProfessionalForm() {
       {/* UI Style */}
       <div className="bg-white rounded-2xl p-7 border border-slate-200/80 shadow-sm">
         <label className="font-geo block text-[11px] font-bold text-slate-500 mb-5 uppercase tracking-[0.15em]">{t.proUiStyle}</label>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { value: 'elegant', emoji: '', desc: '优雅奢华' },
-            { value: 'minimal', emoji: '', desc: '极简现代' },
-            { value: 'corporate', emoji: '', desc: '企业商务' },
+            { value: 'executive', bg: '#14213D', ink: '#F4F1EA', fg: '#C9A96E', zh: '藏青金饰 · 衬线', en: 'Navy & gold · serif' },
+            { value: 'swiss', bg: '#FFFFFF', ink: '#111111', fg: '#D40000', zh: '瑞士网格 · 正红', en: 'Swiss grid · red' },
+            { value: 'poster', bg: 'linear-gradient(135deg,#0E0E10,#2a2a2e)', ink: '#F5F2EC', fg: '#C8A15A', zh: '影院暗调 · 海报', en: 'Cinematic poster' },
           ].map(s => (
             <button key={s.value} type="button" onClick={() => setProStyle(prev => ({ ...prev, ui_style: s.value }))}
-              className={`p-5 rounded-2xl border-2 text-center transition-all active:scale-[0.96] ${proStyle.ui_style === s.value ? 'border-slate-800 bg-slate-50 shadow-lg shadow-slate-200/50' : 'border-slate-200/60 bg-white hover:border-slate-400 hover:shadow-md'}`}>
-              <div className="text-4xl mb-3">{s.emoji}</div>
+              className={`p-3 rounded-2xl border-2 text-left transition-all active:scale-[0.97] ${proStyle.ui_style === s.value ? 'border-slate-800 bg-white shadow-lg shadow-slate-200/60' : 'border-slate-200/70 bg-white hover:border-slate-400 hover:shadow-md'}`}>
+              <div className="w-full h-24 rounded-xl mb-3 overflow-hidden relative border border-black/5" style={{ background: s.bg }}>
+                <div className="absolute inset-0 p-3 flex flex-col gap-1.5">
+                  <div className="h-2.5 w-3/5 rounded-full" style={{ background: s.ink, opacity: 0.92 }} />
+                  <div className="h-1.5 w-2/5 rounded-full" style={{ background: s.fg }} />
+                  <div className="mt-auto flex gap-1.5">
+                    <div className="h-7 flex-1 rounded-md" style={{ background: s.ink, opacity: 0.18 }} />
+                    <div className="h-7 flex-1 rounded-md" style={{ background: s.ink, opacity: 0.1 }} />
+                  </div>
+                </div>
+              </div>
               <div className="text-sm font-bold text-slate-800">{t[s.value]}</div>
-              <div className="text-xs text-slate-500 mt-1">{s.desc}</div>
+              <div className="text-xs text-slate-500 mt-0.5">{lang === 'zh' ? s.zh : s.en}</div>
             </button>
           ))}
         </div>
@@ -177,7 +186,7 @@ function ProfessionalForm() {
 
   const handleAIStyleUpdate = (updates) => { setProStyle(prev => ({ ...prev, ...updates })) }
 
-  const handleSubmit = async (resumeData, aiEffects, sectionOrder) => {
+  const generate = useCallback(async (resumeData, aiEffects, sectionOrder) => {
     const response = await fetch(`${API_BASE_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -189,6 +198,11 @@ function ProfessionalForm() {
       throw new Error(errMsg)
     }
     const { html } = await response.json()
+    return html
+  }, [proStyle, lang])
+
+  const handleSubmit = async (resumeData, aiEffects, sectionOrder) => {
+    const html = await generate(resumeData, aiEffects, sectionOrder)
     navigate('/preview', { state: { html, mode: 'professional' } })
   }
 
@@ -241,9 +255,9 @@ function ProfessionalForm() {
       <Navbar />
       
       {/* ===== Main Content ===== */}
-      <main className="relative z-10 max-w-3xl mx-auto px-6 py-12">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-12">
         {/* Hero Section */}
-        <div className="mb-14 relative">
+        <div className="mb-14 relative max-w-3xl">
           {/* Decorative top rule */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-10 h-px bg-slate-800" />
@@ -277,7 +291,7 @@ function ProfessionalForm() {
           </div>
         </div>
         
-        <ResumeForm mode="professional" onSubmit={handleSubmit} extraFields={extraFields} currentStyle={proStyle} onStyleUpdateFromAI={handleAIStyleUpdate} theme="professional" />
+        <ResumeForm mode="professional" onSubmit={handleSubmit} extraFields={extraFields} currentStyle={proStyle} onStyleUpdateFromAI={handleAIStyleUpdate} theme="professional" generatePreview={generate} />
       </main>
     </div>
   )

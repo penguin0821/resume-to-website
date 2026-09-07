@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../LanguageContext'
 import { API_BASE_URL } from '../config'
@@ -11,7 +11,7 @@ function PersonalForm() {
   const { t, lang } = useLang()
   const navigate = useNavigate()
   const [style, setStyle] = useState({
-    effect_colors: { solid: ['#1e40af'], gradient: [], splice: [], shadow: [], accent: [] },
+    effect_colors: { solid: [], gradient: [], splice: [], shadow: [], accent: [] },
     color_effect: 'solid',
     color_effects: ['solid'],
     splice_direction: 'horizontal',
@@ -19,7 +19,7 @@ function PersonalForm() {
     accent_pattern: 'dots',
     accent_layout: 'even',
     keywords: [],
-    ui_style: 'cartoon',
+    ui_style: 'editorial',
     bg_image: '',
     timeline_style: 'alternate',
     dark_mode: false,
@@ -177,18 +177,26 @@ function PersonalForm() {
       {/* UI Style */}
       <div className={`rounded-3xl p-7 border ${isPersonalTheme ? 'bg-white/70 backdrop-blur-sm border-orange-100/60' : 'bg-white border-slate-200'}`}>
         <label className="font-geo block text-[11px] font-bold text-orange-600 mb-5 uppercase tracking-[0.15em]">{t.uiStyle}</label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { value: 'cartoon', emoji: '🧸', desc: '活泼可爱' },
-            { value: 'minimal', emoji: '🌿', desc: '干净简洁' },
-            { value: 'artistic', emoji: '', desc: '创意优雅' },
-            { value: 'retro', emoji: '', desc: '复古怀旧' },
+            { value: 'editorial', bg: '#FAF7F2', ink: '#1C1917', fg: '#C4552D', zh: '暖纸编辑 · 衬线优雅', en: 'Warm editorial · serif' },
+            { value: 'studio', bg: '#F2F2F0', ink: '#111111', fg: '#FF4D00', zh: '粗野主义 · 国际橙', en: 'Brutalist · intl orange' },
+            { value: 'aurora', bg: 'linear-gradient(135deg,#5EEAD4,#A5B4FC,#FDBA74)', ink: '#141824', fg: '#0D9488', zh: '柔光玻璃 · 极光渐变', en: 'Glass · aurora mesh' },
           ].map(s => (
             <button key={s.value} type="button" onClick={() => setStyle(prev => ({ ...prev, ui_style: s.value }))}
-              className={`p-5 rounded-2xl border-2 text-center transition-all active:scale-[0.96] ${style.ui_style === s.value ? 'border-orange-400 bg-gradient-to-br from-orange-50/80 to-pink-50/80 shadow-lg shadow-orange-100/50' : 'border-stone-200/60 bg-white/60 hover:border-orange-300 hover:shadow-md backdrop-blur-sm'}`}>
-              <div className="text-4xl mb-3">{s.emoji}</div>
+              className={`p-3 rounded-2xl border-2 text-left transition-all active:scale-[0.97] ${style.ui_style === s.value ? 'border-orange-400 bg-white shadow-lg shadow-orange-100/60' : 'border-stone-200/70 bg-white/60 hover:border-orange-300 hover:shadow-md backdrop-blur-sm'}`}>
+              <div className="w-full h-24 rounded-xl mb-3 overflow-hidden relative border border-black/5" style={{ background: s.bg }}>
+                <div className="absolute inset-0 p-3 flex flex-col gap-1.5">
+                  <div className="h-2.5 w-3/5 rounded-full" style={{ background: s.ink, opacity: 0.9 }} />
+                  <div className="h-1.5 w-2/5 rounded-full" style={{ background: s.fg }} />
+                  <div className="mt-auto flex gap-1.5">
+                    <div className="h-7 flex-1 rounded-md" style={{ background: s.ink, opacity: 0.16 }} />
+                    <div className="h-7 flex-1 rounded-md" style={{ background: s.ink, opacity: 0.1 }} />
+                  </div>
+                </div>
+              </div>
               <div className="text-sm font-bold text-stone-800">{t[s.value]}</div>
-              <div className="text-xs text-stone-500 mt-1">{s.desc}</div>
+              <div className="text-xs text-stone-500 mt-0.5">{lang === 'zh' ? s.zh : s.en}</div>
             </button>
           ))}
         </div>
@@ -227,7 +235,7 @@ function PersonalForm() {
 
   const handleAIStyleUpdate = (updates) => { setStyle(prev => ({ ...prev, ...updates })) }
 
-  const handleSubmit = async (resumeData, aiEffects, sectionOrder) => {
+  const generate = useCallback(async (resumeData, aiEffects, sectionOrder) => {
     const ec = style.effect_colors
     const stylePayload = {
       ...style,
@@ -248,6 +256,11 @@ function PersonalForm() {
       throw new Error(errMsg)
     }
     const { html } = await response.json()
+    return html
+  }, [style, lang])
+
+  const handleSubmit = async (resumeData, aiEffects, sectionOrder) => {
+    const html = await generate(resumeData, aiEffects, sectionOrder)
     navigate('/preview', { state: { html, mode: 'personal' } })
   }
 
@@ -294,9 +307,9 @@ function PersonalForm() {
       <Navbar />
       
       {/* ===== Main Content ===== */}
-      <main className="relative z-10 max-w-3xl mx-auto px-6 py-12">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-12">
         {/* Hero Section */}
-        <div className="mb-14 relative">
+        <div className="mb-14 relative max-w-3xl">
           {/* Decorative corner element */}
           <div className="absolute -top-6 -left-3 w-20 h-20 pointer-events-none">
             <div className="absolute top-0 left-0 w-8 h-0.5 bg-gradient-to-r from-orange-400 to-transparent" />
@@ -331,7 +344,7 @@ function PersonalForm() {
           </div>
         </div>
         
-        <ResumeForm mode="personal" onSubmit={handleSubmit} extraFields={extraFields} currentStyle={style} onStyleUpdateFromAI={handleAIStyleUpdate} theme="personal" />
+        <ResumeForm mode="personal" onSubmit={handleSubmit} extraFields={extraFields} currentStyle={style} onStyleUpdateFromAI={handleAIStyleUpdate} theme="personal" generatePreview={generate} />
       </main>
     </div>
   )

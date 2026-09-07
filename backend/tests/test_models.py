@@ -89,7 +89,7 @@ class TestPersonalStyle:
     def test_defaults(self):
         s = PersonalStyle()
         assert s.primary_color == "#6366f1"
-        assert s.ui_style == "cartoon"
+        assert s.ui_style == "editorial"
         assert s.color_effects == ["solid"]
         assert s.accent_pattern == "dots"
         assert s.dark_mode is False
@@ -105,7 +105,7 @@ class TestProfessionalStyle:
     def test_defaults(self):
         s = ProfessionalStyle()
         assert s.accent_color == "#c9a96e"
-        assert s.ui_style == "elegant"
+        assert s.ui_style == "executive"
         assert s.content_layout == "classic"
         assert s.dark_mode is False
 

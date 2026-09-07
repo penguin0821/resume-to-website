@@ -8,7 +8,7 @@ import * as htmlToImage from 'html-to-image'
 const PREVIEW_STORAGE_KEY = 'resume-preview-data'
 
 function Preview() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -55,6 +55,19 @@ function Preview() {
     a.download = `resume-site-${mode || 'personal'}.html`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  // Open the generated site in a new tab and trigger the browser print dialog
+  // ("Save as PDF"). Uses a real window rather than the sandboxed iframe so the
+  // print stylesheet and full page height are honoured.
+  const downloadPdf = () => {
+    const w = window.open('', '_blank')
+    if (!w) return
+    w.document.open()
+    w.document.write(html)
+    w.document.close()
+    w.focus()
+    setTimeout(() => { try { w.print() } catch { /* ignore */ } }, 500)
   }
 
   const deployNetlify = async () => {
@@ -190,6 +203,12 @@ function Preview() {
               className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-sm font-medium transition-colors disabled:opacity-50"
             >
               {screenshotting ? `📸 ${t.screenshotting || '...'}` : `📸 ${t.screenshot || 'Screenshot'}`}
+            </button>
+            <button
+              onClick={downloadPdf}
+              className="px-5 py-2.5 bg-rose-600 text-white rounded-xl hover:bg-rose-700 text-sm font-medium transition-colors"
+            >
+              {lang === 'zh' ? '下载 PDF' : 'Download PDF'}
             </button>
           </div>
         </div>

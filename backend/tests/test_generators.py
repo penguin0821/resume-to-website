@@ -76,7 +76,7 @@ class TestPersonalGenerator:
 
     def test_ui_style_presets(self, full_resume):
         """Each UI style preset should produce valid HTML."""
-        for ui in ['cartoon', 'minimal', 'artistic', 'retro']:
+        for ui in ['editorial', 'studio', 'aurora']:
             style = PersonalStyle(ui_style=ui)
             html = generate_personal_site(full_resume, style=style)
             assert '<html' in html
@@ -129,7 +129,7 @@ class TestProfessionalGenerator:
 
     def test_ui_style_presets(self, full_resume):
         """Each UI preset should produce valid HTML."""
-        for ui in ['elegant', 'minimal', 'corporate']:
+        for ui in ['executive', 'swiss', 'poster']:
             style = ProfessionalStyle(ui_style=ui)
             html = generate_professional_site(full_resume, style=style)
             assert '<html' in html
